@@ -1,0 +1,14 @@
+bin/
+obj/
+node_modules/
+web/dist/
+.vs/
+*.user
+/data/
+/publish/
+/probes/output/
+/TestResults/
+playwright-report/
+test-results/
+testkorpus/stor-400.pptx
+src/UuDok.Web/wwwroot/

@@ -1,0 +1,188 @@
+{
+  "version": "2026.10.30-1",
+  "sourcesChecked": "2026-10-30",
+  "disclaimer": "Registeret er et arbeidsverktøy. Det gir ikke en juridisk vurdering, og et «bestått» resultat betyr bare at den automatiske kontrollen ikke fant feil. Full WCAG-etterlevelse kan ikke kontrolleres automatisk.",
+  "sources": [
+    { "id": "uu-forskrift", "title": "Uutilsynet: Kva seier forskrifta?", "url": "https://www.uutilsynet.no/regelverk/kva-seier-forskrifta/153", "checked": "2026-10-30", "note": "Offentlig sektor: WCAG 2.1 A/AA gjennom EN 301 549 V3.2.1 (webdirektivet) fra 1.2.2023. Privat sektor: WCAG 2.0 (35 krav) ifølge flere kilder; sekundærkilder er uenige – bekreft direkte hos Uutilsynet før juridisk bruk." },
+    { "id": "uu-wad", "title": "Uutilsynet: EUs webdirektiv (WAD)", "url": "https://www.uutilsynet.no/webdirektivet-wad/eus-webdirektiv-wad/265", "checked": "2026-10-30", "note": "Dokumenter publisert på nettsteder omfattes; unntak for kontorformater publisert før 23.9.2018 som ikke trengs i aktive prosesser." },
+    { "id": "lovdata-forskrift", "title": "Forskrift om universell utforming av IKT-løsninger (FOR-2013-06-21-732)", "url": "https://lovdata.no/dokument/SF/forskrift/2013-06-21-732", "checked": "2026-10-30", "note": "Gjeldende tekst skal leses på Lovdata. Ikke lest i fulltekst ved denne kildekontrollen." },
+    { "id": "en301549-v321", "title": "ETSI EN 301 549 V3.2.1 (2021-03)", "url": "https://www.etsi.org/deliver/etsi_en/301500_301599/301549/03.02.01_60/en_301549v030201p.pdf", "checked": "2026-10-30", "note": "Kapittel 10: ikke-nettbaserte dokumenter (WCAG 2.1). Kapittel 11.8: forfatterverktøy. Sitert i EU-tidende (harmonisert)." },
+    { "id": "en301549-v411", "title": "ETSI EN 301 549 V4.1.1 (2026)", "url": "https://accessible-eu-centre.ec.europa.eu/content-corner/news/european-accessibility-standard-en-301-549-has-been-updated-2026-09-07_en", "checked": "2026-10-30", "note": "Publisert september 2026, bygger på WCAG 2.2. Per kildekontroll ikke sitert i EU-tidende og ikke norsk lovkrav. Klausulnummer for dokumentkrav er her antatt lik V3.2.1 (10.x = WCAG-nummer) og må verifiseres mot ETSI-teksten." },
+    { "id": "wcag22", "title": "W3C WCAG 2.2", "url": "https://www.w3.org/TR/WCAG22/", "checked": "2026-10-30", "note": "W3C-anbefaling." },
+    { "id": "wcag2ict", "title": "W3C Guidance on Applying WCAG 2 to Non-Web ICT (WCAG2ICT)", "url": "https://www.w3.org/TR/wcag2ict-22/", "checked": "2026-10-30", "note": "Veiledning (Group Note), ikke normativ." },
+    { "id": "ms-a11y-checker", "title": "Microsoft: Regler for tilgjengelighetskontrollen", "url": "https://support.microsoft.com/office/rules-for-the-accessibility-checker-651e08f2-0fc3-4e10-aaca-74b4a67101c1", "checked": "2026-10-30", "note": "Beste praksis i Office; ikke normativ." }
+  ],
+  "profiles": [
+    { "id": "no", "name": "Norsk regelverksprofil", "normative": true, "basis": "WCAG 2.1 A/AA via EN 301 549 V3.2.1 for offentlig sektor (webdirektivet). For privat sektor gjelder ifølge Uutilsynet fortsatt WCAG 2.0-kravene (35 suksesskriterier); kriterier som bare finnes i 2.1 er merket.", "sources": ["uu-forskrift", "uu-wad", "lovdata-forskrift"], "note": "Om et dokument er omfattet (virkeområde, unntak, publisering) avgjøres ikke av appen." },
+    { "id": "en321", "name": "EN 301 549 V3.2.1 – kapittel 10", "normative": true, "basis": "Krav til ikke-nettbaserte dokumenter, WCAG 2.1-basert.", "sources": ["en301549-v321"] },
+    { "id": "en411", "name": "EN 301 549 V4.1.1 – teknisk profil", "normative": false, "basis": "WCAG 2.2-basert versjon. Holdes adskilt fra norsk lovkrav.", "sources": ["en301549-v411"] },
+    { "id": "bp", "name": "Beste praksis (WCAG 2.2 A/AA + WCAG2ICT)", "normative": false, "basis": "Relevante WCAG 2.2 A/AA-kriterier tolket for dokumenter etter WCAG2ICT, pluss Office sine anbefalinger der de er nyttige.", "sources": ["wcag22", "wcag2ict", "ms-a11y-checker"] },
+    { "id": "web", "name": "WCAG 2.2 AA for appens webgrensesnitt", "normative": false, "basis": "Brukes på appens eget grensesnitt (testet med axe-core og manuell protokoll), ikke på dokumentene.", "sources": ["wcag22"] }
+  ],
+  "rules": [
+    {
+      "id": "ALT-MISSING", "title": "Bilde eller grafikk mangler alternativ tekst", "kind": "requirement", "appliesTo": ["docx", "pptx"],
+      "wcag": "1.1.1", "level": "A", "check": "auto", "repair": "suggestion", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 1.1.1 Ikke-tekstlig innhold (A)"], "en321": ["10.1.1.1 Non-text content"], "en411": ["10.1.1.1 Non-text content (WCAG 2.2)"], "bp": ["WCAG 2.2 1.1.1 (A)", "WCAG2ICT 1.1.1"] },
+      "testMethod": "Bilder, diagrammer, SmartArt, grupper, figurer med bildefyll og eldre VML-bilder uten descr/alt og uten dekorativ-markering.",
+      "limitations": "Om en tekst er riktig og tilstrekkelig kan ikke kontrolleres automatisk. Figurer uten tekst regnes som mulig dekorasjon (se DECOR-CANDIDATE)."
+    },
+    {
+      "id": "ALT-POOR", "title": "Alternativ tekst ser generisk eller automatisk generert ut", "kind": "bestPractice", "appliesTo": ["docx", "pptx"],
+      "wcag": "1.1.1", "level": "A", "check": "heuristic", "repair": "suggestion", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.1.1 (A) – kvalitet"], "en321": ["10.1.1.1"], "en411": ["10.1.1.1"], "bp": ["WCAG 2.2 1.1.1 (A)"] },
+      "testMethod": "Filnavn, enkeltord («bilde», «graf»), Office sine automatiske beskrivelser og kommaseparerte objektlister.",
+      "limitations": "Heuristisk. Gode, korte beskrivelser kan bli flagget, og dårlige beskrivelser kan slippe gjennom."
+    },
+    {
+      "id": "ALT-TEXTIMAGE", "title": "Tekst finnes bare i et bilde", "kind": "requirement", "appliesTo": ["docx", "pptx"],
+      "wcag": "1.4.5", "level": "AA", "check": "auto", "repair": "suggestion", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.1.1 (A)", "WCAG 2.1 1.4.5 Bilder av tekst (AA)"], "en321": ["10.1.1.1", "10.1.4.5 Images of text"], "en411": ["10.1.1.1", "10.1.4.5"], "bp": ["WCAG 2.2 1.1.1", "WCAG 2.2 1.4.5"] },
+      "testMethod": "Lokal OCR (Windows.Media.Ocr) av bildet slik det vises. Tekst som ikke finnes i alternativ tekst eller rundt bildet.",
+      "limitations": "OCR kan feile på stilisert eller forvrengt tekst. Uten OCR blir regelen «ikke testet». Et tekstalternativ løser 1.1.1, men 1.4.5 kan fortsatt kreve synlig tekst."
+    },
+    {
+      "id": "ALT-COMPLEX", "title": "Komplekst bilde (diagram, graf, kart) trenger utfyllende beskrivelse", "kind": "bestPractice", "appliesTo": ["docx", "pptx"],
+      "wcag": "1.1.1", "level": "A", "check": "heuristic", "repair": "suggestion", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.1.1 (A)"], "en321": ["10.1.1.1"], "en411": ["10.1.1.1"], "bp": ["WCAG 2.2 1.1.1", "WCAG2ICT"] },
+      "testMethod": "Diagrammer med datadel, SmartArt og bilder klassifisert som graf/kart/sammensatt.",
+      "limitations": "Appen lager kort tekst og et utkast til lang beskrivelse. Om informasjonen er fullt tilgjengelig i dokumentet må vurderes av et menneske."
+    },
+    {
+      "id": "DECOR-CANDIDATE", "title": "Mulig dekorasjon er ikke markert som dekorativ", "kind": "bestPractice", "appliesTo": ["docx", "pptx"],
+      "wcag": "1.1.1", "level": "A", "check": "heuristic", "repair": "auto", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.1.1 (A)"], "en321": ["10.1.1.1"], "en411": ["10.1.1.1"], "bp": ["WCAG 2.2 1.1.1"] },
+      "testMethod": "Koblingslinjer, svært smale bilder (skillelinjer) og figurer uten tekst eller bildefyll.",
+      "limitations": "Automatisk markering bare for koblingslinjer og tynne skillelinjer. Andre figurer foreslås til gjennomgang."
+    },
+    {
+      "id": "DOC-TITLE", "title": "Dokumentet mangler tittel i dokumentegenskapene", "kind": "requirement", "appliesTo": ["docx", "pptx"],
+      "wcag": "2.4.2", "level": "A", "check": "auto", "repair": "auto", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 2.4.2 Sidetitler (A), tolket for dokumenter"], "en321": ["10.2.4.2 Document titled"], "en411": ["10.2.4.2 Document titled"], "bp": ["WCAG 2.2 2.4.2", "WCAG2ICT 2.4.2"] },
+      "testMethod": "dc:title i docProps/core.xml.",
+      "limitations": "Tittelen foreslås fra første overskrift eller første lysbildetittel. Om den beskriver dokumentet godt, må vurderes."
+    },
+    {
+      "id": "SLIDE-TITLE", "title": "Lysbildet mangler tittel", "kind": "bestPractice", "appliesTo": ["pptx"],
+      "wcag": "1.3.1", "level": "A", "check": "auto", "repair": "auto", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 1.3.1 (A)", "WCAG 2.1 2.4.6 (AA)"], "en321": ["10.1.3.1 Info and relationships", "10.2.4.6 Headings and labels"], "en411": ["10.1.3.1", "10.2.4.6"], "bp": ["WCAG 2.2 1.3.1", "WCAG 2.2 2.4.6", "Office: Mangler lysbildetittel"] },
+      "testMethod": "Tittelplassholder (title/ctrTitle) med tekst.",
+      "limitations": "En skjult tittel (utenfor lysbildet) er teknisk verifisert i PowerPoint (HasTitle, uendret rendering). Skjermleseropplevelse må bekreftes manuelt."
+    },
+    {
+      "id": "SLIDE-TITLE-UNIQUE", "title": "Flere lysbilder har samme tittel", "kind": "bestPractice", "appliesTo": ["pptx"],
+      "wcag": "2.4.6", "level": "AA", "check": "auto", "repair": "none", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 2.4.6 (AA)"], "en321": ["10.2.4.6"], "en411": ["10.2.4.6"], "bp": ["Office: Duplikate lysbildetitler"] },
+      "testMethod": "Sammenligning av tittelteksten.",
+      "limitations": "Like titler kan være riktige (for eksempel «Oppgave»). Appen lager aldri kunstige unike titler."
+    },
+    {
+      "id": "LANG-DOC", "title": "Dokumentspråk mangler eller ser feil ut", "kind": "requirement", "appliesTo": ["docx", "pptx"],
+      "wcag": "3.1.1", "level": "A", "check": "auto", "repair": "auto", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 3.1.1 Språk på siden (A)"], "en321": ["10.3.1.1 Language of document"], "en411": ["10.3.1.1"], "bp": ["WCAG 2.2 3.1.1"] },
+      "testMethod": "DOCX: w:lang i docDefaults. PPTX: lang på tekstløp sammenlignet med en enkel språkgjenkjenning (bokmål, nynorsk, engelsk).",
+      "limitations": "Språkgjenkjenningen er enkel og brukes bare ved tydelige tilfeller med nok tekst."
+    },
+    {
+      "id": "LANG-PARTS", "title": "Deler på annet språk", "kind": "requirement", "appliesTo": ["docx", "pptx"],
+      "wcag": "3.1.2", "level": "AA", "check": "manual", "repair": "none", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 3.1.2 Språk på deler av innhold (AA)"], "en321": ["10.3.1.2"], "en411": ["10.3.1.2"], "bp": ["WCAG 2.2 3.1.2"] },
+      "testMethod": "Krever manuell vurdering. Appen viser hvilke språk som er merket.",
+      "limitations": "Umerket fremmedspråklig tekst oppdages ikke pålitelig."
+    },
+    {
+      "id": "HEAD-NONE", "title": "Langt dokument uten overskrifter", "kind": "requirement", "appliesTo": ["docx"],
+      "wcag": "1.3.1", "level": "A", "check": "auto", "repair": "suggestion", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 1.3.1 (A)", "WCAG 2.1 2.4.6 (AA)"], "en321": ["10.1.3.1", "10.2.4.6"], "en411": ["10.1.3.1", "10.2.4.6"], "bp": ["WCAG 2.2 1.3.1"] },
+      "testMethod": "Ingen avsnitt med overskriftsstil eller dispositionsnivå i et dokument med mer enn 20 avsnitt med tekst.",
+      "limitations": "Korte dokumenter trenger ikke nødvendigvis overskrifter."
+    },
+    {
+      "id": "HEAD-FAKE", "title": "Tekst ser ut som en overskrift, men er ikke merket", "kind": "requirement", "appliesTo": ["docx"],
+      "wcag": "1.3.1", "level": "A", "check": "heuristic", "repair": "suggestion", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.3.1 (A)"], "en321": ["10.1.3.1"], "en411": ["10.1.3.1"], "bp": ["WCAG 2.2 1.3.1"] },
+      "testMethod": "Korte avsnitt i stor eller fet skrift fulgt av brødtekst.",
+      "limitations": "I «Bevar utseendet» brukes w:outlineLvl (synlig nøytralt, verifisert i Word). Om NVDA kunngjør dette som overskrift er ikke bekreftet. Krever gjennomgang."
+    },
+    {
+      "id": "HEAD-SKIP", "title": "Overskriftsnivå hopper over et nivå", "kind": "bestPractice", "appliesTo": ["docx"],
+      "wcag": "1.3.1", "level": "A", "check": "auto", "repair": "none", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 1.3.1 (A)"], "en321": ["10.1.3.1"], "en411": ["10.1.3.1"], "bp": ["WCAG 2.2 1.3.1"] },
+      "testMethod": "Nivå N+2 etter nivå N.",
+      "limitations": "Ikke et absolutt krav, men vanlig anbefaling."
+    },
+    {
+      "id": "LIST-FAKE", "title": "Liste laget med tegn i stedet for ekte liste", "kind": "requirement", "appliesTo": ["docx"],
+      "wcag": "1.3.1", "level": "A", "check": "heuristic", "repair": "visible", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.3.1 (A)"], "en321": ["10.1.3.1"], "en411": ["10.1.3.1"], "bp": ["WCAG 2.2 1.3.1"] },
+      "testMethod": "Avsnitt som starter med «-», «•», «1)» og lignende uten listeformatering.",
+      "limitations": "Ekte liste endrer innrykk og tegn. Rapporteres og repareres ikke automatisk."
+    },
+    {
+      "id": "TABLE-HEADER", "title": "Tabell mangler markert overskriftsrad", "kind": "requirement", "appliesTo": ["docx", "pptx"],
+      "wcag": "1.3.1", "level": "A", "check": "auto", "repair": "suggestion", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 1.3.1 (A)"], "en321": ["10.1.3.1"], "en411": ["10.1.3.1"], "bp": ["WCAG 2.2 1.3.1"] },
+      "testMethod": "DOCX: w:tblHeader på første rad. PPTX: firstRow på a:tblPr.",
+      "limitations": "DOCX: w:tblHeader gjentar raden på nye sider (synlig hvis tabellen deles over sider) og brukes bare etter visuell kontroll. PPTX: firstRow kan endre tabellstilens utseende og hører til «Tillat synlige forbedringer»."
+    },
+    {
+      "id": "TABLE-MERGED", "title": "Tabell med sammenslåtte celler", "kind": "bestPractice", "appliesTo": ["docx", "pptx"],
+      "wcag": "1.3.1", "level": "A", "check": "auto", "repair": "none", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 1.3.1 (A)"], "en321": ["10.1.3.1"], "en411": ["10.1.3.1"], "bp": ["Office: Sammenslåtte celler"] },
+      "testMethod": "gridSpan/vMerge/rowSpan/hMerge.",
+      "limitations": "Celler slås aldri sammen eller deles automatisk."
+    },
+    {
+      "id": "LINK-PURPOSE", "title": "Lenketeksten forklarer ikke hvor lenken går", "kind": "requirement", "appliesTo": ["docx", "pptx"],
+      "wcag": "2.4.4", "level": "A", "check": "heuristic", "repair": "visible", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 2.4.4 Formål med lenke (i kontekst) (A)"], "en321": ["10.2.4.4 Link purpose (in context)"], "en411": ["10.2.4.4"], "bp": ["WCAG 2.2 2.4.4"] },
+      "testMethod": "Lenketekster som «her», «klikk her», «les mer», «lenke».",
+      "limitations": "Konteksten rundt kan gjøre formålet klart. Synlig lenketekst endres bare i «Tillat synlige forbedringer». Skjermtips regnes ikke som tilstrekkelig løsning."
+    },
+    {
+      "id": "LINK-RAWURL", "title": "Nettadresse brukt som lenketekst", "kind": "bestPractice", "appliesTo": ["docx", "pptx"],
+      "wcag": "2.4.4", "level": "A", "check": "auto", "repair": "visible", "canPass": true,
+      "refs": { "no": ["WCAG 2.1 2.4.4 (A)"], "en321": ["10.2.4.4"], "en411": ["10.2.4.4"], "bp": ["WCAG 2.2 2.4.4"] },
+      "testMethod": "Lenketekst som starter med http(s):// eller www.",
+      "limitations": "Korte, lesbare adresser kan være akseptable, særlig i trykte dokumenter."
+    },
+    {
+      "id": "CONTRAST-TEXT", "title": "For lav tekstkontrast", "kind": "requirement", "appliesTo": ["docx", "pptx"],
+      "wcag": "1.4.3", "level": "AA", "check": "auto", "repair": "visible", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.4.3 Kontrast (minimum) (AA)"], "en321": ["10.1.4.3 Contrast (minimum)"], "en411": ["10.1.4.3"], "bp": ["WCAG 2.2 1.4.3"] },
+      "testMethod": "DOCX: eksplisitte tekstfarger mot uthevings-/skyggefarge eller sidebakgrunn (4,5:1, stor tekst 3:1). PPTX: ikke implementert i denne versjonen.",
+      "limitations": "Tekst over bilder, gradienter og temafarger uten verdi beregnes ikke. En skjult beskrivelse løser aldri kontrastproblemer; de krever synlig endring."
+    },
+    {
+      "id": "ORDER-SLIDE", "title": "Leserekkefølgen på lysbildet kan være ulogisk", "kind": "requirement", "appliesTo": ["pptx"],
+      "wcag": "1.3.2", "level": "A", "check": "heuristic", "repair": "suggestion", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.3.2 Meningsfylt rekkefølge (A)"], "en321": ["10.1.3.2 Meaningful sequence"], "en411": ["10.1.3.2"], "bp": ["WCAG 2.2 1.3.2"] },
+      "testMethod": "Tittelen leses ikke først. Leserekkefølge = figurtreets rekkefølge = lagrekkefølge (bevis 3/4).",
+      "limitations": "Tittelen flyttes først bare når den ikke overlapper noen figur den passerer, og resultatet består visuell sammenligning. Øvrig rekkefølge sorteres aldri automatisk."
+    },
+    {
+      "id": "ORDER-FLOAT", "title": "Flytende objekter kan få uventet leserekkefølge", "kind": "requirement", "appliesTo": ["docx"],
+      "wcag": "1.3.2", "level": "A", "check": "heuristic", "repair": "none", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.3.2 (A)"], "en321": ["10.1.3.2"], "en411": ["10.1.3.2"], "bp": ["Office: Objekt er ikke på linje med tekst"] },
+      "testMethod": "Bilder og tekstbokser med flytende plassering (wp:anchor).",
+      "limitations": "Endres ikke automatisk fordi det endrer oppsettet."
+    },
+    {
+      "id": "MEDIA-CAPTIONS", "title": "Video eller lyd: teksting og alternativer kan ikke bekreftes", "kind": "requirement", "appliesTo": ["docx", "pptx"],
+      "wcag": "1.2.2", "level": "A", "check": "manual", "repair": "none", "canPass": false,
+      "refs": { "no": ["WCAG 2.1 1.2.1 (A)", "WCAG 2.1 1.2.2 Teksting (A)", "WCAG 2.1 1.2.5 Synstolking (AA)"], "en321": ["10.1.2.1", "10.1.2.2", "10.1.2.5"], "en411": ["10.1.2.1", "10.1.2.2", "10.1.2.5"], "bp": ["WCAG 2.2 1.2.x"] },
+      "testMethod": "Medieobjekter oppdages. Teksting kontrolleres ikke i denne versjonen.",
+      "limitations": "En tekstfil ved siden av presentasjonen betyr ikke at mediet er tekstet."
+    },
+    {
+      "id": "INFO-SIGNED", "title": "Dokumentet er digitalt signert", "kind": "bestPractice", "appliesTo": ["docx", "pptx"],
+      "wcag": null, "level": null, "check": "auto", "repair": "none", "canPass": true, "refs": {},
+      "testMethod": "Signaturrelasjon i pakken.", "limitations": "Endring ugyldiggjør signaturen. Appen endrer bare etter eksplisitt valg."
+    },
+    {
+      "id": "INFO-PROTECTED", "title": "Dokumentet er beskyttet mot redigering", "kind": "bestPractice", "appliesTo": ["docx", "pptx"],
+      "wcag": null, "level": null, "check": "auto", "repair": "none", "canPass": true, "refs": {},
+      "testMethod": "documentProtection/writeProtection/modifyVerifier.", "limitations": "Appen omgår aldri beskyttelse og endrer ikke slike filer."
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+<Solution>
+  <Folder Name="/probes/">
+    <Project Path="probes/UuDok.Probes/UuDok.Probes.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/UuDok.Ai/UuDok.Ai.csproj" />
+    <Project Path="src/UuDok.Core/UuDok.Core.csproj" />
+    <Project Path="src/UuDok.Docx/UuDok.Docx.csproj" />
+    <Project Path="src/UuDok.Engine/UuDok.Engine.csproj" />
+    <Project Path="src/UuDok.Intake/UuDok.Intake.csproj" />
+    <Project Path="src/UuDok.Patching/UuDok.Patching.csproj" />
+    <Project Path="src/UuDok.Pptx/UuDok.Pptx.csproj" />
+    <Project Path="src/UuDok.Rendering/UuDok.Rendering.csproj" />
+    <Project Path="src/UuDok.Reporting/UuDok.Reporting.csproj" />
+    <Project Path="src/UuDok.Web/UuDok.Web.csproj" />
+    <Project Path="src/UuDok.WinHelper/UuDok.WinHelper.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/UuDok.E2E/UuDok.E2E.csproj" />
+    <Project Path="tests/UuDok.Tests/UuDok.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/UuDok.Tools/UuDok.Tools.csproj" />
+  </Folder>
+</Solution>

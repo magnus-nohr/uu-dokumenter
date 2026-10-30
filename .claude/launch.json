@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "uudok-web",
+      "runtimeExecutable": "C:\\Program Files\\dotnet\\dotnet.exe",
+      "runtimeArgs": [
+        "run", "--project", "src/UuDok.Web", "--no-launch-profile", "--",
+        "--UuDok:DataDir=data",
+        "--UuDok:Helper=src/UuDok.WinHelper/bin/Debug/net10.0-windows10.0.19041.0/UuDok.WinHelper.exe"
+      ],
+      "port": 5317
+    }
+  ]
+}

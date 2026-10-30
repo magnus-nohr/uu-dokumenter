@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" />
+    <PackageReference Include="ZXing.Net" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\UuDok.Engine\UuDok.Engine.csproj" />
+    <ProjectReference Include="..\..\src\UuDok.Reporting\UuDok.Reporting.csproj" />
+    <ProjectReference Include="..\..\src\UuDok.Rendering\UuDok.Rendering.csproj" />
+    <ProjectReference Include="..\..\src\UuDok.Ai\UuDok.Ai.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,81 @@
+{
+  "beskrivelse": "Syntetisk evalueringssett for alternative tekster i norsk undervisningsmateriell. Utvid med lovlig tilgjengelige bilder før valg av standardmodell. Ingen ekte personer.",
+  "elementer": [
+    {
+      "id": "ki-tittelbilde",
+      "bilde": "testkorpus/img/ki-tittelbilde.png",
+      "dokumenttype": "presentasjon",
+      "tittelBruktSomLysbildetittel": "Fotosyntese",
+      "tekstRundt": "",
+      "forventetRolle": ["informative", "textImage", "composite"],
+      "maaNevne": [["næring", "sollys"]],
+      "maaIkkeNevne": ["Fotosyntese", "bilde av", "person"],
+      "referanse": "Illustrasjon med sol og blader og teksten «Slik lager plantene næring av sollys». Tittelen er allerede lest som lysbildetittel."
+    },
+    {
+      "id": "graf-elever",
+      "bilde": "testkorpus/img/graf-elever.png",
+      "dokumenttype": "dokument",
+      "tekstRundt": "Elevtall per trinn ved skolen.",
+      "diagramdata": null,
+      "forventetRolle": ["chart"],
+      "maaNevne": [["8. trinn", "8."], ["24"], ["31"], ["27"]],
+      "maaIkkeNevne": ["bilde av"],
+      "referanse": "Søylediagram «Antall elever per trinn»: 8. trinn 24, 9. trinn 31, 10. trinn 27. Flest elever på 9. trinn."
+    },
+    {
+      "id": "skjermbilde-lagre",
+      "bilde": "testkorpus/img/skjermbilde-lagre.png",
+      "dokumenttype": "presentasjon",
+      "lysbildetittel": "Lagre arbeidet",
+      "tekstRundt": "Lagre arbeidet",
+      "forventetRolle": ["screenshot"],
+      "maaNevne": [["Lagre"]],
+      "maaIkkeNevne": ["tegnefilm", "innendørs", "datamaskin, tegnefilm"],
+      "referanse": "Skjermbilde av et program der knappen «Lagre» er uthevet med rød ramme; dokumentet har ulagrede endringer."
+    },
+    {
+      "id": "qr-oppgave",
+      "bilde": "testkorpus/img/qr-oppgave.png",
+      "dokumenttype": "presentasjon",
+      "tekstRundt": "Oppgaver",
+      "qr": "https://example.org/uu-test/oppgave-3",
+      "forventetRolle": ["qrCode"],
+      "maaNevne": [["example.org"]],
+      "maaIkkeNevne": ["skanner", "nettsiden viser"],
+      "referanse": "QR-kode som peker til https://example.org/uu-test/oppgave-3 (formålet er ikke bekreftet)."
+    },
+    {
+      "id": "celle",
+      "bilde": "testkorpus/img/illustrasjon-celle.png",
+      "dokumenttype": "presentasjon",
+      "lysbildetittel": "Cellens deler",
+      "tekstRundt": "Alle planteceller har cellevegg og cellekjerne.",
+      "forventetRolle": ["informative", "composite"],
+      "maaNevne": [["cellevegg"], ["cellekjerne"]],
+      "maaIkkeNevne": ["bilde av", "mitokondrie", "kloroplast"],
+      "referanse": "Skisse av en planteselle med merket cellevegg ytterst og cellekjerne i midten."
+    },
+    {
+      "id": "dekor-linje",
+      "bilde": "testkorpus/img/dekor-linje.png",
+      "dokumenttype": "presentasjon",
+      "tekstRundt": "Næringskjeden",
+      "forventetRolle": ["decorative"],
+      "maaNevne": [],
+      "maaIkkeNevne": [],
+      "referanse": "Ren dekorasjon (skillelinje). Forventet: marker som dekorativ."
+    },
+    {
+      "id": "lite-uskarpt",
+      "bilde": "testkorpus/img/lite-uskarpt.png",
+      "dokumenttype": "presentasjon",
+      "tekstRundt": "",
+      "forventetRolle": ["unknown", "textImage", "informative"],
+      "maaNevne": [],
+      "maaIkkeNevne": ["Oppgave 1", "Oppgave 2"],
+      "forventetGjennomgang": true,
+      "referanse": "For lite til å tolkes sikkert. Forventet: krever gjennomgang, ingen oppdiktet tekst."
+    }
+  ]
+}

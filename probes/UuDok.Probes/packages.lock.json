@@ -1,0 +1,146 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "DocumentFormat.OpenXml.Framework": {
+        "type": "Transitive",
+        "resolved": "3.5.1",
+        "contentHash": "U5txtc3ORno73xQx9Lf2gWzfaSZnZwKHfLkTAslhlew9lxe5XbUiCt0dY1fHeAf8yRqszUAe5i/+xLC9R/Xfsw==",
+        "dependencies": {
+          "System.IO.Packaging": "10.0.2"
+        }
+      },
+      "Microsoft.Extensions.AI.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.5.1",
+        "contentHash": "nB0l3IlsVbNeUxsE7nZNb9GY8rP1OSeqpj0pseORPejt474HNKEauTWTLdSJPkSvPlRMxowZNMo6nyp7APAiSg=="
+      },
+      "SkiaSharp.NativeAssets.macOS": {
+        "type": "Transitive",
+        "resolved": "4.154.0",
+        "contentHash": "GgYL4ML3HT4CW33oXMHdp7BSRU87bPUfWBXdYgNduGlt4GAbAM/3eXcjjUdilS0H1r2R5iBhwvExCfSYGwFKlw=="
+      },
+      "SkiaSharp.NativeAssets.Win32": {
+        "type": "Transitive",
+        "resolved": "4.154.0",
+        "contentHash": "GXgoY77GCXdPcveNAmy8o3gVit8sp6YtnI88h5camLPfihjulwJUajZXKhgVuZ8RhuwSTgfyt/00Dx8HRUSeAA=="
+      },
+      "System.IO.Packaging": {
+        "type": "Transitive",
+        "resolved": "10.0.2",
+        "contentHash": "JTpM4z0wpoIHHDvlCU27HsXo+zVnpWib94HXQpzzr+jc/P9NYf4w353AK4MXyGq/grm1mbLi7eXsOsDU8sGmNg=="
+      },
+      "uudok.ai": {
+        "type": "Project",
+        "dependencies": {
+          "Anthropic": "[13.3.0, )",
+          "SkiaSharp": "[4.154.0, )",
+          "UuDok.Core": "[0.1.0, )",
+          "ZXing.Net": "[0.16.11, )"
+        }
+      },
+      "uudok.core": {
+        "type": "Project"
+      },
+      "uudok.docx": {
+        "type": "Project",
+        "dependencies": {
+          "DocumentFormat.OpenXml": "[3.5.1, )",
+          "UuDok.Core": "[0.1.0, )"
+        }
+      },
+      "uudok.engine": {
+        "type": "Project",
+        "dependencies": {
+          "UuDok.Ai": "[0.1.0, )",
+          "UuDok.Core": "[0.1.0, )",
+          "UuDok.Docx": "[0.1.0, )",
+          "UuDok.Intake": "[0.1.0, )",
+          "UuDok.Patching": "[0.1.0, )",
+          "UuDok.Pptx": "[0.1.0, )",
+          "UuDok.Rendering": "[0.1.0, )"
+        }
+      },
+      "uudok.intake": {
+        "type": "Project",
+        "dependencies": {
+          "DocumentFormat.OpenXml": "[3.5.1, )",
+          "UuDok.Core": "[0.1.0, )"
+        }
+      },
+      "uudok.patching": {
+        "type": "Project",
+        "dependencies": {
+          "DocumentFormat.OpenXml": "[3.5.1, )",
+          "UuDok.Core": "[0.1.0, )"
+        }
+      },
+      "uudok.pptx": {
+        "type": "Project",
+        "dependencies": {
+          "DocumentFormat.OpenXml": "[3.5.1, )",
+          "UuDok.Core": "[0.1.0, )"
+        }
+      },
+      "uudok.rendering": {
+        "type": "Project",
+        "dependencies": {
+          "SkiaSharp": "[4.154.0, )",
+          "UuDok.Core": "[0.1.0, )"
+        }
+      },
+      "uudok.reporting": {
+        "type": "Project",
+        "dependencies": {
+          "UuDok.Core": "[0.1.0, )",
+          "UuDok.Engine": "[0.1.0, )"
+        }
+      },
+      "uudok.tools": {
+        "type": "Project",
+        "dependencies": {
+          "SkiaSharp": "[4.154.0, )",
+          "UuDok.Ai": "[0.1.0, )",
+          "UuDok.Engine": "[0.1.0, )",
+          "UuDok.Rendering": "[0.1.0, )",
+          "UuDok.Reporting": "[0.1.0, )",
+          "ZXing.Net": "[0.16.11, )"
+        }
+      },
+      "Anthropic": {
+        "type": "CentralTransitive",
+        "requested": "[13.3.0, )",
+        "resolved": "13.3.0",
+        "contentHash": "LaqSBrXFuHxTG6+liUGZLL1kJbpyUfyD5UjiCO8CI90il+udIbaqwqA8iRKClSzLk57f+xhtFcqiCrKIFdW8jQ==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.5.1"
+        }
+      },
+      "DocumentFormat.OpenXml": {
+        "type": "CentralTransitive",
+        "requested": "[3.5.1, )",
+        "resolved": "3.5.1",
+        "contentHash": "zxdOf5VVCe/uNklbRhj8dVBzQGj3DoqkUuqOp9cAZVuN8mNYDjof1lvSQA2OQNr8Ptc9d7pbA7Azq/ReaI3FpA==",
+        "dependencies": {
+          "DocumentFormat.OpenXml.Framework": "3.5.1"
+        }
+      },
+      "SkiaSharp": {
+        "type": "CentralTransitive",
+        "requested": "[4.154.0, )",
+        "resolved": "4.154.0",
+        "contentHash": "R3BuszJ3tUFmni37nZIRawXL0yx+XHyx7xi1716/0TybuEQFhnBx48Ig3rFpeVFQVytpGpJZZ+NLW9d9UPG7EA==",
+        "dependencies": {
+          "SkiaSharp.NativeAssets.Win32": "4.154.0",
+          "SkiaSharp.NativeAssets.macOS": "4.154.0"
+        }
+      },
+      "ZXing.Net": {
+        "type": "CentralTransitive",
+        "requested": "[0.16.11, )",
+        "resolved": "0.16.11",
+        "contentHash": "OZfAVu88hl87BffQ+rlWCj/vLvAhhCK4QnFaoveeF/MY8SjHNSYBQ3qyUEWlPKNgBQGh1syXhCDg10vUnCsqkg=="
+      }
+    }
+  }
+}

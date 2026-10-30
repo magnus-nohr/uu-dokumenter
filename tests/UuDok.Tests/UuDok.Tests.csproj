@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\UuDok.Web\UuDok.Web.csproj" />
+    <ProjectReference Include="..\..\src\UuDok.Engine\UuDok.Engine.csproj" />
+    <ProjectReference Include="..\..\src\UuDok.Reporting\UuDok.Reporting.csproj" />
+    <ProjectReference Include="..\..\tools\UuDok.Tools\UuDok.Tools.csproj" />
+  </ItemGroup>
+</Project>

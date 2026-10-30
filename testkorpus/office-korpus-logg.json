@@ -1,0 +1,33 @@
+{
+  "pptx": "C:\\Vibe coding\\UU-dokumenter\\testkorpus\\office-presentasjon.pptx",
+  "docx": "C:\\Vibe coding\\UU-dokumenter\\testkorpus\\office-dokument.docx",
+  "log": [
+    "OK: bilde uten alt-tekst",
+    "OK: KI-tittelbilde fullskjerm",
+    "OK: overlapp \u002B gruppe \u002B animasjon",
+    "OK: dekorativ linje",
+    "OK: tabell",
+    "OK: lenke \u00ABKlikk her\u00BB",
+    "OK: graf som bilde",
+    "OK: SmartArt",
+    "OK: QR-kode",
+    "OK: notat",
+    "OK: skjermbilde",
+    "OK: lite uskarpt bilde",
+    "OK: samme bilde, god alt-tekst",
+    "OK: KI-tittelbilde skjev tekst",
+    "OK: punktliste",
+    "OK: lenke \u00ABher\u00BB",
+    "OK: innebygd bilde uten alt-tekst",
+    "OK: tabell",
+    "OK: formel",
+    "OK: topptekst",
+    "OK: kommentar",
+    "OK: bokmerke",
+    "OK: felt (dato)",
+    "OK: innholdskontroll",
+    "OK: tekstboks",
+    "OK: spor endringer",
+    "OK: bildetekst-bilde: KI-tittelbilde i Word"
+  ]
+}

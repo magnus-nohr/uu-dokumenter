@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <ItemGroup>
+    <ProjectReference Include="..\UuDok.Engine\UuDok.Engine.csproj" />
+    <ProjectReference Include="..\UuDok.Reporting\UuDok.Reporting.csproj" />
+    <ProjectReference Include="..\UuDok.Rendering\UuDok.Rendering.csproj" />
+    <ProjectReference Include="..\UuDok.Intake\UuDok.Intake.csproj" />
+    <ProjectReference Include="..\UuDok.Ai\UuDok.Ai.csproj" />
+    <ProjectReference Include="..\UuDok.Core\UuDok.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+</Project>

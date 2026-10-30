@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\UuDok.Core\UuDok.Core.csproj" />
+    <ProjectReference Include="..\UuDok.Intake\UuDok.Intake.csproj" />
+    <ProjectReference Include="..\UuDok.Docx\UuDok.Docx.csproj" />
+    <ProjectReference Include="..\UuDok.Pptx\UuDok.Pptx.csproj" />
+    <ProjectReference Include="..\UuDok.Patching\UuDok.Patching.csproj" />
+    <ProjectReference Include="..\UuDok.Ai\UuDok.Ai.csproj" />
+    <ProjectReference Include="..\UuDok.Rendering\UuDok.Rendering.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>
