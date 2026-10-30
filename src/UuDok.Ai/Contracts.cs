@@ -23,6 +23,7 @@ public sealed record AltTextRequest
     public string? OcrText { get; init; }
     public bool OcrAgreement { get; init; }
     public string? TextUsedAsSlideTitle { get; init; }           // gjentas ikke i alt-teksten
+    public string? TextAlreadyOnSlide { get; init; }             // tekst fra bildet som nå ligger som tittel/brødtekst
     public string? ChartData { get; init; }
     public string? QrPayload { get; init; }
     public required string Language { get; init; }

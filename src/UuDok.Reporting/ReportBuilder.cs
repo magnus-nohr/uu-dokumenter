@@ -22,7 +22,8 @@ public static class ReportBuilder
         bool Done(PlannedChange c) => c.Status is ChangeStatus.Applied or ChangeStatus.Verified && !c.VisibleVariantOnly;
         var alt = s.Changes.Count(c => Done(c) && c.Kind == ChangeKind.SetAltText);
         var dec = s.Changes.Count(c => Done(c) && c.Kind == ChangeKind.SetDecorative);
-        var titles = s.Changes.Count(c => Done(c) && c.Kind == ChangeKind.AddHiddenSlideTitle);
+        var titles = s.Changes.Count(c => Done(c) && c.Kind is ChangeKind.AddHiddenSlideTitle or ChangeKind.AddHiddenSlideText);
+        var slideBody = s.Changes.Count(c => Done(c) && c.Kind == ChangeKind.AddHiddenSlideText && c.Value.Contains('\n'));
         var pending = s.Changes.Count(c => c.PendingReview && !c.VisibleVariantOnly);
         var pendingVisible = s.Changes.Count(c => c.PendingReview && c.VisibleVariantOnly);
         var contrast = s.Findings.Count(f => f.RuleId == "CONTRAST-TEXT");
@@ -43,6 +44,7 @@ public static class ReportBuilder
         if (alt > 0) list.Add($"{alt} {(alt == 1 ? "bilde har" : "bilder har")} fått beskrivelse.");
         if (dec > 0) list.Add(dec == 1 ? "1 objekt er markert som dekorativt." : $"{dec} objekter er markert som dekorative.");
         if (titles > 0) list.Add($"{titles} {(titles == 1 ? "lysbilde har" : "lysbilder har")} fått en skjult tittel uten synlig endring.");
+        if (slideBody > 0) list.Add($"På {slideBody} {(slideBody == 1 ? "lysbilde" : "lysbilder")} er teksten i bildet lagt inn som tittel og brødtekst bak bildet, slik at skjermlesere og leselister får den.");
         foreach (var c in s.Changes.Where(c => Done(c) && c.Kind == ChangeKind.SetDocumentTitle)) list.Add($"Dokumenttittelen er satt til «{c.Value}».");
         foreach (var c in s.Changes.Where(c => Done(c) && c.Kind == ChangeKind.SetDocumentLanguage)) list.Add($"Standardspråket er satt til {c.Value}.");
         var moved = s.Changes.Count(c => Done(c) && c.Kind == ChangeKind.MoveToReadingStart);
@@ -119,7 +121,7 @@ public static class ReportBuilder
     public static string KindText(ChangeKind k) => k switch
     {
         ChangeKind.SetAltText => "Alternativ tekst", ChangeKind.SetDecorative => "Markert som dekorativ", ChangeKind.SetDocumentTitle => "Dokumenttittel",
-        ChangeKind.SetDocumentLanguage => "Dokumentspråk", ChangeKind.SetOutlineLevel => "Overskriftsnivå", ChangeKind.AddHiddenSlideTitle => "Skjult lysbildetittel",
+        ChangeKind.SetDocumentLanguage => "Dokumentspråk", ChangeKind.SetOutlineLevel => "Overskriftsnivå", ChangeKind.AddHiddenSlideTitle => "Skjult lysbildetittel", ChangeKind.AddHiddenSlideText => "Tittel og brødtekst fra bildet",
         ChangeKind.MarkTableHeaderRow => "Tabelloverskrift", ChangeKind.MoveToReadingStart => "Leserekkefølge", ChangeKind.SetVisibleLinkText => "Lenketekst (synlig)",
         ChangeKind.SetTextColor => "Tekstfarge (synlig)", _ => k.ToString(),
     };

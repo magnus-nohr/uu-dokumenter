@@ -10,9 +10,11 @@ export function HelpView() {
       </p>
       <h2>Bilder med tekst i (for eksempel KI-genererte lysbildebilder)</h2>
       <p>
-        Hvis et lysbilde mangler tittel og har et stort bilde med en tydelig tittel i, leser appen teksten lokalt og legger den inn som
-        lysbildetittel utenfor lysbildet. Da finner skjermleserbrukere tittelen, uten at lysbildet ser annerledes ut. Resten av teksten
-        i bildet tas med i bildets beskrivelse, uten å gjenta tittelen. Er lesingen usikker, blir det et forslag du må godkjenne.
+        Hvis et lysbilde mangler tittel og består av et stort bilde med tekst i, leser appen teksten lokalt. Den øverste, største
+        linjen blir lysbildets tittel, og resten blir brødtekst. Begge legges som ekte tekstfelt bak bildet, slik at skjermlesere og
+        leselister får teksten mens lysbildet ser helt likt ut. Leserekkefølgen blir tittel, brødtekst og så bildet. Har bildet
+        gjennomsiktighet, legges teksten utenfor lysbildet i stedet. Bildets alternative tekst skal da bare beskrive selve
+        illustrasjonen. Er lesingen usikker, blir det et forslag du må godkjenne, og du kan rette teksten.
       </p>
       <h2>Hva appen ikke kan</h2>
       <ul>

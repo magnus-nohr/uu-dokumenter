@@ -8,7 +8,14 @@ namespace UuDok.Engine;
 public sealed record PlanInput(
     DocumentModel Model, AnalysisResult Analysis, IReadOnlyDictionary<string, OcrInfo> Ocr,
     IReadOnlyDictionary<string, AiResult> Ai, IReadOnlyDictionary<string, string> QrPayloads,
-    JobOptions Options, bool RenderAvailable);
+    JobOptions Options, bool RenderAvailable, IReadOnlySet<string>? OpaqueImages = null);
+
+/// <summary>Tekst lest fra et bilde, delt i tittel og brødtekst.</summary>
+public sealed record SlideTextCandidate(string Title, List<string> Body, DocObject Picture, bool Agreement, bool Complex)
+{
+    public string AsValue => string.Join("\n", new[] { Title }.Concat(Body));
+    public string AllText => string.Join(" ", new[] { Title }.Concat(Body));
+}
 
 /// <summary>
 /// Lager endringsplanen. Hver endring har forutsetning (fingeravtrykk), risiko og opprinnelse.
@@ -28,6 +35,7 @@ public static class Planner
         var findingsByObj = p.Analysis.Findings.GroupBy(f => f.Object.ToString()).ToDictionary(g => g.Key, g => g.ToList());
         var altPlanned = new HashSet<string>();
         var titledByOcr = new Dictionary<int, (string Title, string Pic)>();
+        var textOnSlideFrom = new Dictionary<string, SlideTextCandidate>();   // bilde → tekst lagt inn som tittel/brødtekst
 
         PlannedChange Add(ChangeKind kind, ObjectRef target, string value, ChangeOrigin origin, IEnumerable<Finding> fs,
             string reason, bool review, VisualRisk risk = VisualRisk.None, string? old = null, string? fp = null,
@@ -49,15 +57,31 @@ public static class Planner
         foreach (var f in p.Analysis.Findings.Where(f => f.RuleId == "SLIDE-TITLE"))
         {
             var slide = m.Slides.First(s => s.PartUri == f.Object.PartUri);
-            var cand = OcrTitle(m, slide, p.Ocr);
+            var cand = SlideTextFromImage(m, slide, p.Ocr);
             if (cand == null) { f.ResultNote = "Ingen tittel funnet i tekst eller bilder. Legg til en tittel manuelt."; continue; }
-            var (title, pic, agree) = cand.Value;
-            var review = !agree || title.Length < 3;
-            Add(ChangeKind.AddHiddenSlideTitle, new ObjectRef(slide.PartUri, "part"), title, ChangeOrigin.Ocr, [f],
-                $"Lysbildet mangler tittel; tittelen er lest fra teksten i bildet «{pic.Name}».", review,
-                uncertainty: agree ? [] : ["Teksten i bildet ble lest ulikt i to forsøk."],
-                display: new() { ["slide"] = slide.Number.ToString(), ["source"] = "OCR", ["image"] = ImageKey(pic) }, group: "Lysbildetitler fra bilder");
-            titledByOcr[slide.Number] = (title, pic.Ref.ToString());
+            var pic = cand.Picture;
+            var uncertainty = new List<string>();
+            if (!cand.Agreement) uncertainty.Add("Teksten i bildet ble lest ulikt i to forsøk.");
+            if (cand.Complex) uncertainty.Add("Bildet har mye tekst; rekkefølgen i brødteksten kan avvike fra bildet.");
+            // Bak bildet når bildet er ugjennomsiktig og ligger på øverste nivå; ellers utenfor lysbildet.
+            var behind = pic.Depth == 0 && p.OpaqueImages?.Contains(pic.Ref.ToString()) == true && !pic.Extra.ContainsKey("transparency")
+                         && (pic.Bounds?.RotationDeg60k ?? 0) == 0;
+            var prm = behind ? new Dictionary<string, string> { ["behind"] = pic.Ref.Locator } : [];
+            var linked = new List<Finding> { f };
+            linked.AddRange(findingsByObj.GetValueOrDefault(pic.Ref.ToString(), []).Where(x => x.RuleId == "ALT-TEXTIMAGE"));
+            var c = Add(ChangeKind.AddHiddenSlideText, new ObjectRef(slide.PartUri, "part"), cand.AsValue, ChangeOrigin.Ocr, linked,
+                $"Lysbildet består av et bilde med tekst. Teksten er lest lokalt og lagt inn som ekte tittel{(cand.Body.Count > 0 ? " og brødtekst" : "")} " +
+                (behind ? "bak bildet" : "utenfor lysbildet") + ", slik at skjermlesere og leselister får den. Lysbildet ser likt ut.",
+                uncertainty.Count > 0, uncertainty: uncertainty,
+                display: new()
+                {
+                    ["slide"] = slide.Number.ToString(), ["source"] = "OCR", ["image"] = ImageKey(pic), ["location"] = $"Lysbilde {slide.Number}",
+                    ["text"] = cand.AsValue, ["placement"] = behind ? "Bak bildet" : "Utenfor lysbildet",
+                },
+                group: "Tekst fra bilder som tittel og brødtekst");
+            foreach (var (k, v) in prm) c.Params[k] = v;
+            titledByOcr[slide.Number] = (cand.Title, pic.Ref.ToString());
+            textOnSlideFrom[pic.Ref.ToString()] = cand;
         }
 
         // Sikre dekorasjoner (linjer) håndteres i steg 3, med mindre KI har et annet forslag.
@@ -141,7 +165,14 @@ public static class Planner
                     "Beskrivelse laget fra SmartArt-teksten.", false, fp: o.Fingerprint, display: display, group: "SmartArt");
                 continue;
             }
-            if (ocr is { Lines.Count: > 0 })
+            if (textOnSlideFrom.ContainsKey(key))
+            {
+                // Teksten er allerede lest som tittel og brødtekst; alt-teksten skal bare beskrive illustrasjonen.
+                foreach (var r in related.Where(r => r.RuleId != "ALT-TEXTIMAGE"))
+                    r.ResultNote ??= "Teksten i bildet er lagt inn som tittel og brødtekst. Selve illustrasjonen trenger fortsatt en kort beskrivelse (KI-forslag eller manuelt), eller kan markeres som dekorativ.";
+                if (aiNeedsHuman == null) continue;
+            }
+            else if (ocr is { Lines.Count: > 0 })
             {
                 var usedTitle = o.SlideNumber is { } sn2 && titledByOcr.TryGetValue(sn2, out var ttl) && ttl.Pic == key ? ttl.Title : null;
                 var rest = ocr.Lines.Select(l => l.Text).Where(t => usedTitle == null || !Same(t, usedTitle)).ToList();
@@ -253,25 +284,46 @@ public static class Planner
     }
 
     /// <summary>Tittel fra tekst i et stort bilde på lysbildet (typisk KI-generert lysbildebilde).</summary>
-    public static (string Title, DocObject Picture, bool Agreement)? OcrTitle(DocumentModel m, SlideInfo slide, IReadOnlyDictionary<string, OcrInfo> ocr)
+    /// <summary>
+    /// Tittel og brødtekst fra et stort bilde på et lysbilde uten tittel (typisk KI-genererte lysbildebilder).
+    /// Tittel = øverste linje blant de største linjene (minst 60 % av største linjehøyde). Linjen rett under med
+    /// samme størrelse som starter med liten bokstav, regnes som fortsettelse av tittelen. Resten blir brødtekst i
+    /// den rekkefølgen tekstgjenkjenningen leste dem. (Tidligere krav om at tittelen var 30 % større enn neste linje,
+    /// stoppet vanlige oppsett som «ChatGPT introdusert» / «30. november 2022» med nesten lik skriftstørrelse.)
+    /// </summary>
+    public static SlideTextCandidate? SlideTextFromImage(DocumentModel m, SlideInfo slide, IReadOnlyDictionary<string, OcrInfo> ocr)
     {
         double slideArea = (double)m.SlideWidthEmu * m.SlideHeightEmu;
-        var pics = m.Objects.Where(o => o.SlideNumber == slide.Number && o.Type == ObjectType.Picture && o.Bounds != null)
+        var pics = m.Objects.Where(o => o.SlideNumber == slide.Number && o.Type == ObjectType.Picture && o.Bounds != null && !o.Decorative)
             .Where(o => o.Bounds!.Cx * (double)o.Bounds.Cy >= 0.3 * slideArea)
             .OrderByDescending(o => o.Bounds!.Cx * (double)o.Bounds.Cy);
         foreach (var pic in pics)
         {
-            if (!ocr.TryGetValue(pic.Ref.ToString(), out var info) || info.Lines.Count == 0) continue;
-            var lines = info.Lines.OrderByDescending(l => l.H).ToList();
-            var top = lines[0];
-            var second = lines.Skip(1).FirstOrDefault();
-            if (second != null && top.H < 1.3 * second.H) continue;           // ingen tydelig tittel
-            var t = top.Text.Trim();
-            if (t.Length is < 2 or > 90) continue;
-            var letters = t.Count(char.IsLetter) / (double)t.Length;
-            if (letters < 0.6) continue;
+            if (!ocr.TryGetValue(pic.Ref.ToString(), out var info)) continue;
+            static bool Meaningful(string t) => t.Count(char.IsLetterOrDigit) >= 2;
+            var lines = info.Lines.Where(l => Meaningful(l.Text)).ToList();
+            if (lines.Count == 0) continue;
+            var maxH = lines.Max(l => l.H);
+            var large = lines.Where(l => l.H >= 0.6 * maxH).OrderBy(l => l.Y).ThenBy(l => l.X).ToList();
+            var top = large[0];
             if (top.Y > info.ImageHeight * 0.7) continue;                     // tittel nederst er uvanlig
-            return (t, pic, info.Agreement);
+            var t = top.Text.Trim();
+            if (t.Length is < 2 or > 120 || t.Count(char.IsLetter) / (double)t.Length < 0.5) continue;
+            var titleLines = new List<OcrLine> { top };
+            foreach (var next in large.Skip(1))
+            {
+                var prev = titleLines[^1];
+                bool below = next.Y > prev.Y && next.Y - (prev.Y + prev.H) < 0.6 * prev.H;
+                bool sameSize = Math.Abs(next.H - prev.H) <= 0.12 * prev.H;
+                bool continues = next.Text.Length > 0 && char.IsLower(next.Text.TrimStart()[0]);
+                if (below && sameSize && continues) titleLines.Add(next); else break;
+            }
+            var title = string.Join(" ", titleLines.Select(l => l.Text.Trim()));
+            // Små linjer (under 20 % av tittelhøyden) er som regel etiketter i illustrasjonen; de tas med bare når de er lesbare ord.
+            var body = lines.Where(l => !titleLines.Contains(l))
+                .Where(l => l.H >= 0.2 * maxH || l.Text.Trim().Count(char.IsLetter) >= 3)
+                .Select(l => l.Text.Trim()).ToList();
+            return new SlideTextCandidate(title, body, pic, info.Confirms(titleLines.Select(l => l.Text).Concat(body)), body.Count > 12);
         }
         return null;
     }

@@ -132,6 +132,30 @@ public class PatchingTests
     }
 
     [Fact]
+    public void Tittel_og_brodtekst_legges_bak_bildet_eller_utenfor_lysbildet()
+    {
+        var pkg = Corpus.Package("office-presentasjon.pptx");
+        var env = new PatchEnv(12192000, 6858000, "nb-NO");
+        var pic = PicLoc(pkg, "/ppt/slides/slide3.xml", "KI-bilde");
+        var behind = C(ChangeKind.AddHiddenSlideText, "/ppt/slides/slide3.xml", "part", "Fotosyntese\nSlik lager plantene næring av sollys");
+        behind.Params["behind"] = pic;
+        var outside = C(ChangeKind.AddHiddenSlideText, "/ppt/slides/slide8.xml", "part", "Vannets kretsløp\nFordamping");
+        var res = new Patcher().Apply(pkg, [behind, outside], env);
+        Assert.All(new[] { behind, outside }, c => Assert.Equal(ChangeStatus.Applied, c.Status));
+        Assert.True(res.UntouchedVerified);
+        Assert.Empty(OoxmlValidation.NewIssues(OoxmlValidation.Validate(Corpus.Bytes("office-presentasjon.pptx"), DocumentKind.Pptx), OoxmlValidation.Validate(res.Output, DocumentKind.Pptx)));
+
+        var o = OpcPackage.Load(new MemoryStream(res.Output));
+        long Y(XElement sp) => long.Parse((string)sp.Descendants(Ns.A + "off").First().Attribute("y")!);
+        var s3 = SafeXml.Load(o.GetBytes("/ppt/slides/slide3.xml")).Descendants(Ns.P + "spTree").First().Elements(Ns.P + "sp").ToList();
+        Assert.All(s3.Take(2), sp => Assert.InRange(Y(sp), 0, 6858000));           // innenfor bildet (fullskjerm)
+        Assert.Equal("clip", (string?)s3[1].Descendants(Ns.A + "bodyPr").First().Attribute("vertOverflow"));
+        var s8 = SafeXml.Load(o.GetBytes("/ppt/slides/slide8.xml")).Descendants(Ns.P + "spTree").First().Elements(Ns.P + "sp").ToList();
+        Assert.True(Y(s8[0]) < 0);                                                  // tittel over lysbildet
+        Assert.True(Y(s8[1]) > 6858000);                                            // brødtekst under lysbildet
+    }
+
+    [Fact]
     public void Flytting_i_leserekkefolge_godtas_som_flytting_og_ikke_som_andre_endringer()
     {
         var pkg = Corpus.Package("office-presentasjon.pptx");

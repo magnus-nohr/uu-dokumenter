@@ -85,10 +85,12 @@ public sealed class JobService(JobStore store, Paths paths, SettingsService sett
                     SupersedeOthers(state, c);
                     break;
                 case "edit":
-                    var v = ResponseValidator.Clean(d.Value ?? "");
+                    var v = c.Kind == ChangeKind.AddHiddenSlideText   // første linje tittel, resten brødtekst
+                        ? string.Join("\n", (d.Value ?? "").Replace("\r", "").Split('\n').Select(ResponseValidator.Clean).Where(l => l.Length > 0))
+                        : ResponseValidator.Clean(d.Value ?? "");
                     if (v.Length == 0 || v.Length > 2000) return "Teksten må være mellom 1 og 2000 tegn.";
                     if (c.Kind == ChangeKind.SetTextColor && !System.Text.RegularExpressions.Regex.IsMatch(v, "^#?[0-9A-Fa-f]{6}$")) return "Fargen må være en heksadesimal kode, for eksempel #333333.";
-                    if (c.Kind is not (ChangeKind.SetAltText or ChangeKind.AddHiddenSlideTitle or ChangeKind.SetDocumentTitle or ChangeKind.SetVisibleLinkText or ChangeKind.SetTextColor))
+                    if (c.Kind is not (ChangeKind.SetAltText or ChangeKind.AddHiddenSlideTitle or ChangeKind.AddHiddenSlideText or ChangeKind.SetDocumentTitle or ChangeKind.SetVisibleLinkText or ChangeKind.SetTextColor))
                         return "Dette forslaget kan ikke redigeres.";
                     var nc = Clone(c, v.TrimStart('#'));
                     state.Changes[state.Changes.IndexOf(c)] = nc;
@@ -130,7 +132,7 @@ public sealed class JobService(JobStore store, Paths paths, SettingsService sett
         Id = c.Id, Kind = c.Kind, Target = c.Target, Value = value, OldValue = c.OldValue, ExpectedFingerprint = c.ExpectedFingerprint,
         Origin = ChangeOrigin.User, Risk = c.Risk, Visible = c.Visible, RequiresReview = false, Reason = c.Reason, FindingIds = c.FindingIds,
         Status = ChangeStatus.Planned, StatusNote = "Redigert av bruker.", PendingReview = false, UncertaintyReasons = [], Display = c.Display,
-        Group = c.Group, VisibleVariantOnly = c.VisibleVariantOnly,
+        Group = c.Group, VisibleVariantOnly = c.VisibleVariantOnly, Params = c.Params,
     };
 
     protected override async Task ExecuteAsync(CancellationToken stop)

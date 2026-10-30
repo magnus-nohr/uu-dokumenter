@@ -113,7 +113,7 @@ public static partial class Api
                 id = c.Id, kind = c.Kind.ToString(), kindText = ReportBuilder.KindText(c.Kind), group = c.Group ?? ReportBuilder.KindText(c.Kind),
                 value = c.Value, oldValue = c.OldValue, status = ReportBuilder.ChangeStatusText(c), pending = c.PendingReview,
                 applied = c.Status is ChangeStatus.Applied or ChangeStatus.Verified, discarded = c.Status is ChangeStatus.Discarded or ChangeStatus.RolledBack,
-                editable = c.Kind is ChangeKind.SetAltText or ChangeKind.AddHiddenSlideTitle or ChangeKind.SetDocumentTitle or ChangeKind.SetVisibleLinkText or ChangeKind.SetTextColor,
+                editable = c.Kind is ChangeKind.SetAltText or ChangeKind.AddHiddenSlideTitle or ChangeKind.AddHiddenSlideText or ChangeKind.SetDocumentTitle or ChangeKind.SetVisibleLinkText or ChangeKind.SetTextColor,
                 visibleOnly = c.VisibleVariantOnly, reason = c.Reason, statusNote = c.StatusNote, uncertainty = c.UncertaintyReasons,
                 origin = c.Origin.ToString(),
                 image = c.Display.TryGetValue("image", out var k) && File.Exists(Path.Combine(paths.Work(id), "img", k + ".png")) ? $"/api/jobs/{id}/image/{k}" : null,

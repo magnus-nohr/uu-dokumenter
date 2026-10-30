@@ -41,7 +41,7 @@ public sealed record OcrResultDto(string Engine, string Language, string Text, i
     List<string> AvailableLanguages);
 
 public sealed record OcrBatchItem(string Id, string Path);
-public sealed record OcrBatchResult(string Id, string? Language, List<OcrLine> Lines, bool Agreement, int Width, int Height, string? Error);
+public sealed record OcrBatchResult(string Id, string? Language, List<OcrLine> Lines, bool Agreement, int Width, int Height, string? Error, string? SecondText = null);
 
 /// <summary>Lokal OCR med Windows.Media.Ocr (ingen nettverk). Krever installert OCR-språkpakke.</summary>
 public static class WinOcr
@@ -63,7 +63,7 @@ public static class WinOcr
                 var a = await Recognize(it.Path, lang, 1.0);
                 var b = await Recognize(it.Path, lang, 1.6);
                 static string N(string s) => new string(s.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
-                res.Add(new OcrBatchResult(it.Id, a.Language, a.Lines, N(a.Text) == N(b.Text), a.ImageWidth, a.ImageHeight, null));
+                res.Add(new OcrBatchResult(it.Id, a.Language, a.Lines, N(a.Text) == N(b.Text), a.ImageWidth, a.ImageHeight, null, b.Text));
             }
             catch (Exception ex) { res.Add(new OcrBatchResult(it.Id, null, [], false, 0, 0, ex.Message)); }
         }

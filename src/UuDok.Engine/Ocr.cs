@@ -25,7 +25,7 @@ public sealed class WindowsOcr(string helperExe, TimeSpan timeout) : IOcrService
     public string Name => "Windows OCR (lokal)";
 
     private sealed record Line(string Text, double X, double Y, double W, double H);
-    private sealed record Item(string Id, string? Language, List<Line> Lines, bool Agreement, int Width, int Height, string? Error);
+    private sealed record Item(string Id, string? Language, List<Line> Lines, bool Agreement, int Width, int Height, string? Error, string? SecondText);
 
     public async Task<Dictionary<string, OcrInfo>> RecognizeAsync(IReadOnlyList<(string Id, string PngPath)> images, string workDir, CancellationToken ct)
     {
@@ -45,7 +45,7 @@ public sealed class WindowsOcr(string helperExe, TimeSpan timeout) : IOcrService
         var items = JsonSerializer.Deserialize<List<Item>>(await File.ReadAllTextAsync(output, ct), new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? [];
         foreach (var it in items.Where(i => i.Error == null))
             res[it.Id] = new OcrInfo(it.Id, it.Lines.Where(l => !string.IsNullOrWhiteSpace(l.Text)).Select(l => new OcrLine(l.Text.Trim(), l.X, l.Y, l.W, l.H)).ToList(),
-                it.Agreement, it.Language, it.Width, it.Height);
+                it.Agreement, it.Language, it.Width, it.Height, it.SecondText);
         return res;
     }
 }

@@ -71,6 +71,7 @@ public static class PatchOps
             ChangeKind.SetDocumentTitle => SetCoreTitle(doc, c.Value),
             ChangeKind.SetDocumentLanguage => SetDocxDefaultLanguage(doc, c.Value),
             ChangeKind.AddHiddenSlideTitle => AddHiddenSlideTitle(doc, c.Value, env),
+            ChangeKind.AddHiddenSlideText => AddHiddenSlideText(doc, c.Value, c.Params, env),
             ChangeKind.MarkTableHeaderRow => MarkDocxTableHeader(target),
             ChangeKind.MoveToReadingStart => MoveToReadingStart(target),
             ChangeKind.SetVisibleLinkText => SetVisibleLinkText(target, c.Value, c.OldValue),
@@ -262,6 +263,88 @@ public static class PatchOps
         grpSpPr.AddAfterSelf(sp);
         var al = new Allowance();
         al.AddedElements.Add(sp);
+        return al;
+    }
+
+    // ---------- Tittel og brødtekst fra tekst i et bilde ----------
+    /// <summary>
+    /// Legger inn ekte tittel- og brødtekstplassholdere med teksten som bare finnes i et bilde (typisk KI-genererte
+    /// lysbildebilder). Første linje i <paramref name="value"/> er tittel, resten er brødtekst.
+    /// Med <c>behind</c> (lokator til bildet) plasseres feltene innenfor bildets ramme og nederst i lagrekkefølgen,
+    /// altså bak bildet; ellers over og under lysbildet. Feltene legges først i figurtreet, så de leses før bildet.
+    /// Tekst klippes mot feltet (vertOverflow/horzOverflow="clip"), slik at den aldri flyter ut av bildets ramme.
+    /// </summary>
+    public static Allowance AddHiddenSlideText(XDocument slide, string value, IReadOnlyDictionary<string, string> prm, PatchEnv env)
+    {
+        var spTree = slide.Root?.Element(Ns.P + "cSld")?.Element(Ns.P + "spTree")
+            ?? throw new PreconditionFailedException("Lysbildet mangler figurtre.");
+        if (spTree.Descendants(Ns.P + "ph").Any(ph => (string?)ph.Attribute("type") is "title" or "ctrTitle"))
+            throw new PreconditionFailedException("Lysbildet har allerede en tittelplassholder.");
+        if (env.SlideHeightEmu <= 0 || env.SlideWidthEmu <= 0) throw new PreconditionFailedException("Lysbildestørrelse ukjent.");
+        var lines = value.Replace("\r", "").Split('\n').Select(l => l.Trim()).ToList();
+        var title = lines.FirstOrDefault() ?? "";
+        var body = lines.Skip(1).Where(l => l.Length > 0).ToList();
+        if (title.Length == 0) throw new PreconditionFailedException("Tittelen er tom.");
+
+        long W = env.SlideWidthEmu, H = env.SlideHeightEmu;
+        (long x, long y, long cx, long cy) titleBox, bodyBox;
+        if (prm.TryGetValue("behind", out var behindLoc))
+        {
+            var nv = Locators.Resolve(slide, behindLoc) ?? throw new PreconditionFailedException("Bildet teksten skal ligge bak, finnes ikke.");
+            var pic = nv.Parent?.Parent;
+            if (pic?.Parent != spTree) throw new PreconditionFailedException("Bildet ligger i en gruppe; teksten legges ikke bak det.");
+            var xfrm = pic.Element(Ns.P + "spPr")?.Element(Ns.A + "xfrm") ?? throw new PreconditionFailedException("Bildet har ingen plassering.");
+            if (xfrm.Attribute("rot") != null && (string?)xfrm.Attribute("rot") != "0") throw new PreconditionFailedException("Bildet er rotert.");
+            long px = (long)xfrm.Element(Ns.A + "off")!.Attribute("x")!, py = (long)xfrm.Element(Ns.A + "off")!.Attribute("y")!;
+            long pcx = (long)xfrm.Element(Ns.A + "ext")!.Attribute("cx")!, pcy = (long)xfrm.Element(Ns.A + "ext")!.Attribute("cy")!;
+            titleBox = (px + pcx / 20, py + pcy / 20, pcx * 9 / 10, pcy / 5);
+            bodyBox = (px + pcx / 20, py + pcy * 3 / 10, pcx * 9 / 10, pcy * 3 / 5);
+        }
+        else
+        {
+            long th = Math.Max(457200, H / 8), bh = Math.Max(914400, H / 3);
+            titleBox = (0, -(th + 91440), W, th);           // over lysbildet
+            bodyBox = (0, H + 91440, W, bh);                // under lysbildet
+        }
+
+        var maxId = slide.Descendants().Where(e => e.Name.LocalName == "cNvPr")
+            .Select(e => int.TryParse((string?)e.Attribute("id"), out var i) ? i : 0).DefaultIfEmpty(1).Max();
+        var usedIdx = spTree.Descendants(Ns.P + "ph").Select(ph => int.TryParse((string?)ph.Attribute("idx"), out var i) ? i : -1).ToHashSet();
+        var bodyIdx = usedIdx.Contains(1) ? usedIdx.Max() + 1 : 1;
+        var lang = env.Language ?? "nb-NO";
+
+        XElement Shape(int id, string name, XElement ph, (long x, long y, long cx, long cy) b, IEnumerable<XElement> paras) =>
+            new(Ns.P + "sp",
+                new XElement(Ns.P + "nvSpPr",
+                    new XElement(Ns.P + "cNvPr", new XAttribute("id", id), new XAttribute("name", name)),
+                    new XElement(Ns.P + "cNvSpPr", new XElement(Ns.A + "spLocks", new XAttribute("noGrp", "1"))),
+                    new XElement(Ns.P + "nvPr", ph)),
+                new XElement(Ns.P + "spPr",
+                    new XElement(Ns.A + "xfrm",
+                        new XElement(Ns.A + "off", new XAttribute("x", b.x), new XAttribute("y", b.y)),
+                        new XElement(Ns.A + "ext", new XAttribute("cx", b.cx), new XAttribute("cy", b.cy)))),
+                new XElement(Ns.P + "txBody",
+                    new XElement(Ns.A + "bodyPr", new XAttribute("vertOverflow", "clip"), new XAttribute("horzOverflow", "clip"), new XAttribute("wrap", "square")),
+                    new XElement(Ns.A + "lstStyle"),
+                    paras));
+
+        XElement Run(string t) => new(Ns.A + "r", new XElement(Ns.A + "rPr", new XAttribute("lang", lang), new XAttribute("dirty", "0")), new XElement(Ns.A + "t", t));
+
+        var al = new Allowance();
+        var titleSp = Shape(maxId + 1, $"Tittel {maxId + 1} (fra bildet)", new XElement(Ns.P + "ph", new XAttribute("type", "title")), titleBox,
+            [new XElement(Ns.A + "p", Run(title))]);
+        var grpSpPr = spTree.Element(Ns.P + "grpSpPr") ?? throw new PreconditionFailedException("Figurtreet mangler grpSpPr.");
+        grpSpPr.AddAfterSelf(titleSp);
+        al.AddedElements.Add(titleSp);
+        if (body.Count > 0)
+        {
+            var bodySp = Shape(maxId + 2, $"Brødtekst {maxId + 2} (fra bildet)",
+                new XElement(Ns.P + "ph", new XAttribute("type", "body"), new XAttribute("idx", bodyIdx)), bodyBox,
+                body.Select(l => new XElement(Ns.A + "p",
+                    new XElement(Ns.A + "pPr", new XAttribute("marL", 0), new XAttribute("indent", 0), new XElement(Ns.A + "buNone")), Run(l))));
+            titleSp.AddAfterSelf(bodySp);
+            al.AddedElements.Add(bodySp);
+        }
         return al;
     }
 

@@ -5,7 +5,8 @@ using ZXing.Common;
 
 namespace UuDok.Ai;
 
-public sealed record PreparedImage(byte[] DisplayedPng, byte[]? OriginalPng, int Width, int Height, bool CropRemovesMuch);
+/// <param name="Opaque">Bildet slik det vises har ingen gjennomsiktige piksler (tekst bak det kan ikke skinne gjennom).</param>
+public sealed record PreparedImage(byte[] DisplayedPng, byte[]? OriginalPng, int Width, int Height, bool CropRemovesMuch, bool Opaque = false);
 
 /// <summary>Lager bildet slik det faktisk vises (beskjæring fra a:srcRect) og nedskalert til rimelig størrelse.</summary>
 public static class ImagePrep
@@ -28,7 +29,22 @@ public static class ImagePrep
         using var cropped = new SKBitmap(rect.Width, rect.Height);
         bmp.ExtractSubset(cropped, rect);
         var displayed = Encode(Scale(cropped));
-        return new PreparedImage(displayed, much ? Encode(Scale(bmp)) : null, rect.Width, rect.Height, much);
+        return new PreparedImage(displayed, much ? Encode(Scale(bmp)) : null, rect.Width, rect.Height, much, IsOpaque(cropped));
+    }
+
+    private static bool IsOpaque(SKBitmap b)
+    {
+        if (b.AlphaType == SKAlphaType.Opaque) return true;
+        // Kontroller hver piksel i et rutenett (og kantene, der gjennomsiktighet er vanligst).
+        int stepX = Math.Max(1, b.Width / 200), stepY = Math.Max(1, b.Height / 200);
+        for (int y = 0; y < b.Height; y += stepY)
+            for (int x = 0; x < b.Width; x += stepX)
+                if (b.GetPixel(x, y).Alpha < 255) return false;
+        for (int x = 0; x < b.Width; x++)
+            if (b.GetPixel(x, 0).Alpha < 255 || b.GetPixel(x, b.Height - 1).Alpha < 255) return false;
+        for (int y = 0; y < b.Height; y++)
+            if (b.GetPixel(0, y).Alpha < 255 || b.GetPixel(b.Width - 1, y).Alpha < 255) return false;
+        return true;
     }
 
     private static SKBitmap Scale(SKBitmap b)

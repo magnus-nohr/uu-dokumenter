@@ -61,7 +61,7 @@ public static partial class ResponseValidator
     {
         var reasons = new List<string>(s.UncertaintyReasons);
         var review = s.RequiresReview;
-        var sources = string.Join(" ", req.OcrText, req.ChartData, req.Caption, req.NearbyText, req.HeadingOrSlideTitle, req.ExistingAltText, req.QrPayload, req.TextUsedAsSlideTitle);
+        var sources = string.Join(" ", req.OcrText, req.ChartData, req.Caption, req.NearbyText, req.HeadingOrSlideTitle, req.ExistingAltText, req.QrPayload, req.TextUsedAsSlideTitle, req.TextAlreadyOnSlide);
 
         // Lite bilde: lite areal eller kort lengste side. Smale skillelinjer (lange, tynne) regnes ikke som små.
         if (req.ImageWidth > 0 && req.ImageHeight > 0 && (Math.Max(req.ImageWidth, req.ImageHeight) < 120 || req.ImageWidth * req.ImageHeight < 64 * 64))
@@ -86,6 +86,10 @@ public static partial class ResponseValidator
 
         if (req.TextUsedAsSlideTitle is { Length: > 3 } t && s.ProposedAltText.Contains(t, StringComparison.OrdinalIgnoreCase) && s.FunctionalRole != FunctionalRole.textImage)
         { review = true; reasons.Add("Gjentar lysbildetittelen, som allerede leses."); }
+        if (req.TextAlreadyOnSlide is { } onSlide && s.FunctionalRole != FunctionalRole.textImage &&
+            onSlide.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length >= 3 &&
+            s.ProposedAltText.Contains(string.Join(' ', onSlide.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(3)), StringComparison.OrdinalIgnoreCase))
+        { review = true; reasons.Add("Gjentar tekst som allerede ligger som tittel og brødtekst."); }
         if (req.NearbyText is { Length: > 20 } nb && s.ProposedAltText.Length > 20 && nb.Contains(s.ProposedAltText, StringComparison.OrdinalIgnoreCase))
         { review = true; reasons.Add("Teksten gjentar tekst som allerede leses rundt bildet."); }
         if (s.SuggestedAction == SuggestedAction.markDecorative && !string.IsNullOrWhiteSpace(req.ExistingAltText))

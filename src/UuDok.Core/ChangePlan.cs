@@ -13,6 +13,7 @@ public enum ChangeKind
     AddHiddenSlideTitle, // tittelplassholder utenfor lysbildet
     MarkTableHeaderRow,  // w:tblHeader / a:tbl firstRow
     MoveToReadingStart,  // flytt figur først i spTree (bare uten overlapping)
+    AddHiddenSlideText,  // tittel + brødtekst fra tekst i et bilde, lagt bak bildet (eller utenfor lysbildet)
     SetVisibleLinkText,  // kun i «Tillat synlige forbedringer»
     SetTextColor         // kun i «Tillat synlige forbedringer»
 }
@@ -50,6 +51,8 @@ public sealed class PlannedChange
     /// <summary>Data til gjennomgangsvisningen (kontekst, rolle, eksisterende tekst …). Aldri brukt til patching.</summary>
     public Dictionary<string, string> Display { get; init; } = [];
     public string? Group { get; init; }
+    /// <summary>Tekniske parametere for patching (for eksempel hvilket bilde teksten skal ligge bak).</summary>
+    public Dictionary<string, string> Params { get; init; } = [];
     /// <summary>Endringer som bare hører hjemme i varianten med synlige forbedringer.</summary>
     public bool VisibleVariantOnly { get; init; }
 }

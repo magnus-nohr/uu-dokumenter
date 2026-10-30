@@ -6,9 +6,22 @@ namespace UuDok.Core.Rules;
 public sealed record OcrLine(string Text, double X, double Y, double W, double H);
 
 /// <summary>Lokal OCR av et bilde slik det vises. Agreement = to bildevarianter ga samme tekst.</summary>
-public sealed record OcrInfo(string ObjectRef, List<OcrLine> Lines, bool Agreement, string? Language, int ImageWidth, int ImageHeight)
+public sealed record OcrInfo(string ObjectRef, List<OcrLine> Lines, bool Agreement, string? Language, int ImageWidth, int ImageHeight, string? SecondPassText = null)
 {
     public string Text => string.Join("\n", Lines.Select(l => l.Text));
+
+    private static string N(string s) => new string(s.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
+
+    /// <summary>
+    /// Om de gitte linjene ble lest likt i begge forsøkene. Støy som bare finnes i ett forsøk (for eksempel en «O»
+    /// lest inn i et ikon) påvirker da ikke linjene som faktisk brukes.
+    /// </summary>
+    public bool Confirms(IEnumerable<string> lines)
+    {
+        if (SecondPassText == null) return Agreement;
+        var second = N(SecondPassText);
+        return lines.All(l => N(l).Length == 0 || second.Contains(N(l)));
+    }
 }
 
 public sealed class AnalysisResult

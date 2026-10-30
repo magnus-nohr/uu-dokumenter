@@ -7,7 +7,7 @@ type Choice = { action: Decision["action"]; value?: string };
 const labels: Record<string, string> = {
   location: "Sted", slideTitle: "Lysbildetittel", caption: "Bildetekst", context: "Tekst rundt", ocr: "Tekst lest fra bildet",
   role: "Bildets funksjon", evidence: "Grunnlag", provider: "Laget av", text: "Tekst", target: "Lenkemål", from: "Nåværende farge",
-  to: "Foreslått farge", bg: "Bakgrunn", level: "Nivå", source: "Kilde", aiError: "KI-feil",
+  to: "Foreslått farge", bg: "Bakgrunn", level: "Nivå", source: "Kilde", aiError: "KI-feil", placement: "Plassering",
 };
 const roleText: Record<string, string> = {
   informative: "Informativ illustrasjon", decorative: "Dekorasjon", chart: "Diagram eller graf", screenshot: "Skjermbilde",
@@ -121,8 +121,9 @@ export function ReviewView({ id }: { id: string }) {
                     </dl>
                     {isEditing && (
                       <div className="edit">
-                        <label htmlFor={fieldId}>{item.kind === "SetTextColor" ? "Ny farge (for eksempel #333333)" : "Din tekst"}</label>
-                        <textarea id={fieldId} rows={3} value={editing[item.id]} onChange={(e) => setEditing({ ...editing, [item.id]: e.target.value })} />
+                        <label htmlFor={fieldId}>{item.kind === "SetTextColor" ? "Ny farge (for eksempel #333333)"
+                          : item.kind === "AddHiddenSlideText" ? "Tittel på første linje, brødtekst på linjene under" : "Din tekst"}</label>
+                        <textarea id={fieldId} rows={item.kind === "AddHiddenSlideText" ? 6 : 3} value={editing[item.id]} onChange={(e) => setEditing({ ...editing, [item.id]: e.target.value })} />
                         <button type="button" onClick={() => {
                           const v = editing[item.id].trim();
                           if (!v) { setError("Teksten kan ikke være tom."); return; }

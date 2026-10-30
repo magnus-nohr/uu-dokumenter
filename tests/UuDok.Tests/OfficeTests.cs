@@ -42,11 +42,14 @@ public class OfficeTests
     {
         RequireOffice();
         var st = await OfficePipeline().RunAsync(Corpus.Bytes("office-presentasjon.pptx"), Corpus.TempDir(), new JobOptions(), new NullProgress(), TestContext.Current.CancellationToken);
-        var t3 = st.Changes.Single(c => c.Kind == ChangeKind.AddHiddenSlideTitle && c.Target.PartUri == "/ppt/slides/slide3.xml");
-        Assert.Equal("Fotosyntese", t3.Value);
-        Assert.Equal(ChangeStatus.Verified, t3.Status);
-        var t8 = st.Changes.Single(c => c.Kind == ChangeKind.AddHiddenSlideTitle && c.Target.PartUri == "/ppt/slides/slide8.xml");
-        Assert.Equal("Vannets kretsløp", t8.Value);
+        var t3 = st.Changes.Single(c => c.Kind == ChangeKind.AddHiddenSlideText && c.Target.PartUri == "/ppt/slides/slide3.xml");
+        Assert.Equal("Fotosyntese\nSlik lager plantene næring av sollys", t3.Value);
+        Assert.Equal(ChangeStatus.Verified, t3.Status);                         // rendret likt i PowerPoint
+        Assert.True(t3.Params.ContainsKey("behind"));                          // lagt bak bildet (bildet er ugjennomsiktig)
+        var t8 = st.Changes.Single(c => c.Kind == ChangeKind.AddHiddenSlideText && c.Target.PartUri == "/ppt/slides/slide8.xml");
+        Assert.StartsWith("Vannets kretsløp\n", t8.Value);
+        // Teksten fra bildet gjentas ikke i alt-teksten.
+        Assert.DoesNotContain(st.Changes, c => c.Kind == ChangeKind.SetAltText && c.Target.PartUri == "/ppt/slides/slide3.xml" && c.Value.Contains("Slik lager"));
     }
 
     [Fact]

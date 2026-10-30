@@ -48,10 +48,15 @@ Data (jobber, innstillinger) lagres i `%LOCALAPPDATA%\UuDok`. API-nøkler lagres
 
 ### Bilder med tekst i (for eksempel KI-genererte lysbildebilder)
 
-Mangler et lysbilde tittel og har et stort bilde med en tydelig tittel i, leser appen teksten lokalt og legger den inn
-som en ekte lysbildetittel plassert rett over lysbildet. Den synes ikke i fremvisning eller utskrift, men skjermlesere
-og navigasjon finner den. Resten av teksten i bildet tas med i bildets alternative tekst, uten å gjenta tittelen.
-Usikker lesing blir et forslag som du må godkjenne. Uten KI beskrives bare teksten i bildet, ikke illustrasjonen.
+Mangler et lysbilde tittel og består av et stort bilde med tekst i, leser appen teksten lokalt (Windows-OCR). Den
+øverste av de største linjene blir lysbildets **tittel**, og resten blir **brødtekst**. Begge legges som ekte
+tittel- og brødtekstplassholdere **bak bildet**, slik at skjermlesere og leselister får teksten, mens lysbildet ser
+helt likt ut (kontrolleres i PowerPoint). Leserekkefølgen blir tittel, brødtekst, bilde. Har bildet gjennomsiktighet,
+legges feltene utenfor lysbildet i stedet, slik at ingenting kan skinne gjennom.
+
+Bildets alternative tekst skal da bare beskrive selve illustrasjonen. Det krever KI eller at du skriver den selv;
+uten KI står bildet igjen som «mangler beskrivelse» i rapporten. Er lesingen usikker, eller bildet har mye tekst
+(over 12 linjer), blir det et forslag du godkjenner og kan rette i gjennomgangen (første linje er tittel).
 
 ### Innstillinger
 

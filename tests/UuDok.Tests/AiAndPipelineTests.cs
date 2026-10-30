@@ -106,11 +106,12 @@ public class AiAndPipelineTests
     [Fact]
     public async Task Tekst_fra_bildet_brukes_mens_usikkert_KI_forslag_venter()
     {
-        var ocr = new FakeOcr(new() { ["Fotosyntese"] = 140, ["Slik lager plantene næring av sollys"] = 63 });
-        var mock = new MockProvider(r => Json("Sol over syv grønne blader.", review: true, id: r.ObjectId));
+        // Lysbilde 2: bildet dekker under 30 % av lysbildet, så teksten blir alt-tekst (ikke tittel/brødtekst).
+        var ocr = new FakeOcr(new() { ["Cellekjerne"] = 40, ["Cellevegg"] = 40 }, "/ppt/slides/slide2.xml");
+        var mock = new MockProvider(r => Json("Skisse av en planteselle.", review: true, id: r.ObjectId));
         var st = await new Pipeline(new UuDok.Rendering.NoRenderer(), ocr, () => mock)
             .RunAsync(Corpus.Bytes("office-presentasjon.pptx"), Corpus.TempDir(), new JobOptions { AiMode = AiMode.Automatic, EnableRendering = false }, new NullProgress(), default);
-        var forSlide = st.Changes.Where(c => c.Kind == ChangeKind.SetAltText && c.Target.PartUri == "/ppt/slides/slide3.xml").ToList();
+        var forSlide = st.Changes.Where(c => c.Kind == ChangeKind.SetAltText && c.Target.PartUri == "/ppt/slides/slide2.xml").ToList();
         Assert.Contains(forSlide, c => c.Origin == ChangeOrigin.Ocr && c.Status == ChangeStatus.Applied);
         Assert.Contains(forSlide, c => c.Origin == ChangeOrigin.Ai && c.PendingReview);
     }
@@ -206,18 +207,51 @@ public class AiAndPipelineTests
     }
 
     [Fact]
-    public async Task Skjult_tittel_og_alt_tekst_fra_tekst_i_KI_bilde()
+    public async Task Tekst_i_KI_bilde_blir_tittel_og_brodtekst_bak_bildet()
     {
         // OCR-resultat injiseres (Windows-OCR testes i Office-testene); viser planleggingen for brukerens KI-bilder.
         var ocr = new FakeOcr(new() { ["Fotosyntese"] = 140, ["Slik lager plantene næring av sollys"] = 63 });
         var pipe = new Pipeline(new UuDok.Rendering.NoRenderer(), ocr, () => null);
-        var st = await pipe.RunAsync(Corpus.Bytes("office-presentasjon.pptx"), Corpus.TempDir(), new JobOptions { EnableRendering = false }, new NullProgress(), default);
-        var title = st.Changes.First(c => c.Kind == ChangeKind.AddHiddenSlideTitle && c.Target.PartUri == "/ppt/slides/slide3.xml");
-        Assert.Equal("Fotosyntese", title.Value);
-        Assert.Equal(ChangeStatus.Applied, title.Status);
-        var alt = st.Changes.First(c => c.Kind == ChangeKind.SetAltText && c.Target.PartUri == "/ppt/slides/slide3.xml");
-        Assert.Contains("Slik lager plantene næring av sollys", alt.Value);
-        Assert.DoesNotContain("Fotosyntese", alt.Value);                    // tittelen gjentas ikke
+        var dir = Corpus.TempDir();
+        var st = await pipe.RunAsync(Corpus.Bytes("office-presentasjon.pptx"), dir, new JobOptions { EnableRendering = false }, new NullProgress(), default);
+        var text = st.Changes.Single(c => c.Kind == ChangeKind.AddHiddenSlideText && c.Target.PartUri == "/ppt/slides/slide3.xml");
+        Assert.Equal("Fotosyntese\nSlik lager plantene næring av sollys", text.Value);
+        Assert.Equal(ChangeStatus.Applied, text.Status);
+        Assert.True(text.Params.ContainsKey("behind"));
+        // Teksten havner ikke i alt-teksten (den leses allerede som tittel og brødtekst).
+        Assert.DoesNotContain(st.Changes, c => c.Kind == ChangeKind.SetAltText && c.Target.PartUri == "/ppt/slides/slide3.xml");
+        Assert.Contains(st.Findings, f => f.RuleId == "ALT-MISSING" && f.Object.PartUri == "/ppt/slides/slide3.xml" && f.ResultNote!.Contains("illustrasjonen"));
+
+        // Resultatfilen: tittel først, deretter brødtekst, deretter bildet – og begge innenfor bildets ramme.
+        var outPkg = UuDok.Core.Opc.OpcPackage.Load(File.OpenRead(Path.Combine(dir, "output", "forbedret.pptx")));
+        var x = UuDok.Core.Opc.SafeXml.Load(outPkg.GetBytes("/ppt/slides/slide3.xml"));
+        var shapes = x.Descendants(UuDok.Core.Opc.Ns.P + "spTree").First().Elements().Where(e => e.Name.LocalName is "sp" or "pic").ToList();
+        Assert.Equal("title", (string?)shapes[0].Descendants(UuDok.Core.Opc.Ns.P + "ph").First().Attribute("type"));
+        Assert.Equal("body", (string?)shapes[1].Descendants(UuDok.Core.Opc.Ns.P + "ph").First().Attribute("type"));
+        Assert.Equal("pic", shapes[2].Name.LocalName);
+        Assert.All(shapes.Take(2), s => Assert.True(long.Parse((string)s.Descendants(UuDok.Core.Opc.Ns.A + "off").First().Attribute("y")!) >= 0));
+    }
+
+    [Fact]
+    public void Samsvar_gjelder_bare_linjene_som_brukes()
+    {
+        // Observert med Windows-OCR: en «O» i et ikon ble lest i bare ett av to forsøk.
+        var info = new UuDok.Core.Rules.OcrInfo("x", [new("O", 0, 0, 50, 66), new("Skolen i endring", 0, 0, 900, 97), new("1. august 2026", 0, 0, 800, 87)],
+            Agreement: false, "nb", 1920, 1080, SecondPassText: "Skolen i endring\n1. august 2026");
+        Assert.True(info.Confirms(["Skolen i endring", "1. august 2026"]));
+        Assert.False(info.Confirms(["Skolen i endrlng"]));
+    }
+
+    [Fact]
+    public async Task To_linjer_med_nesten_lik_storrelse_gir_tittel_og_brodtekst()
+    {
+        // Brukerens tilfelle: «ChatGPT introdusert» / «30. november 2022» med nesten samme skriftstørrelse.
+        var ocr = new FakeOcr(new() { ["ChatGPT introdusert"] = 90, ["30. november 2022"] = 85, ["..."] = 20 });
+        var st = await new Pipeline(new UuDok.Rendering.NoRenderer(), ocr, () => null)
+            .RunAsync(Corpus.Bytes("office-presentasjon.pptx"), Corpus.TempDir(), new JobOptions { EnableRendering = false }, new NullProgress(), default);
+        var text = st.Changes.Single(c => c.Kind == ChangeKind.AddHiddenSlideText && c.Target.PartUri == "/ppt/slides/slide3.xml");
+        Assert.Equal("ChatGPT introdusert\n30. november 2022", text.Value);
+        Assert.False(text.PendingReview);
     }
 
     [Fact]
@@ -236,14 +270,14 @@ public class AiAndPipelineTests
         Assert.Equal("uudok-rapport/1", json.RootElement.GetProperty("format").GetString());
     }
 
-    private sealed class FakeOcr(Dictionary<string, double> lines) : IOcrService
+    private sealed class FakeOcr(Dictionary<string, double> lines, string slidePart = "/ppt/slides/slide3.xml") : IOcrService
     {
         public bool IsAvailable => true;
         public string Name => "Test-OCR";
         public Task<Dictionary<string, UuDok.Core.Rules.OcrInfo>> RecognizeAsync(IReadOnlyList<(string Id, string PngPath)> images, string workDir, CancellationToken ct)
         {
             var res = new Dictionary<string, UuDok.Core.Rules.OcrInfo>();
-            foreach (var (id, path) in images.Where(i => i.Id.StartsWith("/ppt/slides/slide3.xml")))
+            foreach (var (id, path) in images.Where(i => i.Id.StartsWith(slidePart + "#")))
                 res[id] = new UuDok.Core.Rules.OcrInfo(id, lines.Select((kv, i) => new UuDok.Core.Rules.OcrLine(kv.Key, 160, 200 + i * 150, 900, kv.Value)).ToList(), true, "nb", 1920, 1080);
             return Task.FromResult(res);
         }

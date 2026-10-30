@@ -150,6 +150,8 @@ public sealed class PptxAnalyzer
             if ((string?)blip?.Attribute(Ns.R + "embed") is { } rid)
                 try { var ip = sp.GetPartById(rid); imgUri = ip.Uri.OriginalString; imgCt = ip.ContentType; } catch { }
             if (blip != null && ln == "sp") extra["imageFill"] = "1";
+            // Gjennomsiktighet lagt på i PowerPoint (a:alphaModFix o.l.) – da kan tekst bak bildet skinne gjennom.
+            if (blip?.Elements().Any(e => e.Name.LocalName.StartsWith("alpha")) == true) extra["transparency"] = "1";
             var src = (ln == "pic" ? el.Element(Ns.P + "blipFill") : null)?.Element(Ns.A + "srcRect");
             if (type == ObjectType.Media) extra["media"] = "1";
 

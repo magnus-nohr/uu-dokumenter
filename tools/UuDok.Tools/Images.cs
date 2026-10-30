@@ -12,6 +12,7 @@ public static class Images
         Directory.CreateDirectory(dir);
         Save(KiTitleImage("Fotosyntese", "Slik lager plantene næring av sollys", skew: 0), Path.Combine(dir, "ki-tittelbilde.png"));
         Save(KiTitleImage("Vannets kretsløp", "Fordamping, kondensasjon og nedbør", skew: -0.18f), Path.Combine(dir, "ki-tittelbilde-skjev.png"));
+        Save(TwoLineTitle(), Path.Combine(dir, "ki-tittelbilde-to-linjer.png"));
         Save(Chart(), Path.Combine(dir, "graf-elever.png"));
         Save(Screenshot(), Path.Combine(dir, "skjermbilde-lagre.png"));
         Save(Qr("https://example.org/uu-test/oppgave-3"), Path.Combine(dir, "qr-oppgave.png"));
@@ -49,6 +50,30 @@ public static class Images
         c.DrawText(title, 160 - skew * 300, 360, SKTextAlign.Left, Font(150, bold: true), white);
         c.DrawText(subtitle, 165 - skew * 450, 480, SKTextAlign.Left, Font(64), white);
         c.Restore();
+        return bmp;
+    }
+
+    /// <summary>Som et typisk KI-lysbilde: to tittellinjer med nesten lik størrelse, lys bakgrunn og ikoner rundt.</summary>
+    static SKBitmap TwoLineTitle()
+    {
+        var bmp = new SKBitmap(1920, 1080);
+        using var c = new SKCanvas(bmp);
+        using (var bg = new SKPaint { Shader = SKShader.CreateLinearGradient(new SKPoint(0, 0), new SKPoint(0, 1080),
+                   [new SKColor(0xEA, 0xF4, 0xFF), new SKColor(0xC9, 0xE2, 0xFA)], SKShaderTileMode.Clamp) })
+            c.DrawRect(0, 0, 1920, 1080, bg);
+        using var circle = new SKPaint { Color = new SKColor(0xFF, 0xFF, 0xFF, 200), IsAntialias = true };
+        using var icon = new SKPaint { Color = new SKColor(0x2F, 0x80, 0xED), IsAntialias = true };
+        foreach (var (x, y) in new[] { (250, 300), (1650, 300), (250, 700), (1650, 700), (960, 760) })
+        {
+            c.DrawCircle(x, y, 150, circle);
+            c.DrawRoundRect(x - 60, y - 40, 120, 80, 12, 12, icon);
+        }
+        using var dark = new SKPaint { Color = new SKColor(0x0B, 0x1F, 0x5C), IsAntialias = true };
+        using var blue = new SKPaint { Color = new SKColor(0x1E, 0x5B, 0xD8), IsAntialias = true };
+        c.DrawText("Skolen i endring", 960, 200, SKTextAlign.Center, Font(120, true), dark);
+        c.DrawText("1. august 2026", 960, 340, SKTextAlign.Center, Font(112, true), blue);
+        using var small = new SKPaint { Color = new SKColor(0x33, 0x33, 0x33), IsAntialias = true };
+        c.DrawText("...", 960, 760, SKTextAlign.Center, Font(40), small);
         return bmp;
     }
 

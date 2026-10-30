@@ -155,7 +155,7 @@ public sealed class Pipeline(IRenderer renderer, IOcrService ocr, Func<IAltTextP
                 var o = model.Objects.First(x => x.Ref.ToString() == key);
                 var (img, _) = prepared[key];
                 var slide = o.SlideNumber is { } sn ? model.Slides.First(s => s.Number == sn) : null;
-                var ocrTitle = slide != null && slide.TitleText == null ? Planner.OcrTitle(model, slide, ocrResults) : null;
+                var slideText = slide != null && slide.TitleText == null ? Planner.SlideTextFromImage(model, slide, ocrResults) : null;
                 ocrResults.TryGetValue(key, out var oi);
                 var req = new AltTextRequest
                 {
@@ -164,7 +164,8 @@ public sealed class Pipeline(IRenderer renderer, IOcrService ocr, Func<IAltTextP
                     HeadingOrSlideTitle = slide?.TitleText ?? NearestHeading(model, o), Caption = o.Caption,
                     NearbyText = slide != null ? Trunc(slide.AllVisibleText, 1500) : Trunc(string.Join(" … ", new[] { o.ContextBefore, o.ContextAfter }.Where(x => x != null)), 1500),
                     ExistingAltText = o.AltText, OcrText = oi?.Text, OcrAgreement = oi?.Agreement ?? false,
-                    TextUsedAsSlideTitle = ocrTitle?.Picture == o ? ocrTitle.Value.Title : null,
+                    TextUsedAsSlideTitle = slideText?.Picture == o ? slideText.Title : null,
+                    TextAlreadyOnSlide = slideText?.Picture == o ? slideText.AllText : null,
                     QrPayload = qr.GetValueOrDefault(key), Language = DocLanguage(model), ImageWidth = img.Width, ImageHeight = img.Height,
                 };
                 var r = await provider.SuggestAsync(req, ct);
@@ -177,7 +178,8 @@ public sealed class Pipeline(IRenderer renderer, IOcrService ocr, Func<IAltTextP
 
         progress.Report("Planlegger endringer", 66);
         var renderOk = opt.EnableRendering && renderer.IsAvailable();
-        var plan = Planner.Build(new PlanInput(model, analysis, ocrResults, aiResults, qr, opt, renderOk));
+        var opaque = prepared.Where(kv => kv.Value.Img.Opaque).Select(kv => kv.Key).ToHashSet();
+        var plan = Planner.Build(new PlanInput(model, analysis, ocrResults, aiResults, qr, opt, renderOk, opaque));
         state.Changes.AddRange(plan.Changes);
         foreach (var f in analysis.Findings)
             if (f.ChangeIds.Count > 0) f.State = FindingState.Proposed;
