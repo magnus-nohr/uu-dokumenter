@@ -22,11 +22,18 @@ public static partial class Api
     {
         var api = app.MapGroup("/api");
 
-        api.MapGet("/session", (HttpContext ctx, SettingsService settings, ISecretStore secrets, Func<IRenderer> rf, Func<IOcrService> of) =>
+        api.MapGet("/session", async (HttpContext ctx, SettingsService settings, ISecretStore secrets, Func<IRenderer> rf, Func<IOcrService> of) =>
         {
             var token = ctx.Request.Cookies[LocalSecurityMiddleware.CsrfCookie] ?? LocalSecurityMiddleware.NewToken();
             ctx.Response.Cookies.Append(LocalSecurityMiddleware.CsrfCookie, token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = false, Path = "/" });
             var s = settings.Get();
+            // «Godt nok» uten oppsett: finn en lokal bildemodell automatisk (bare loopback, ingen data sendes).
+            if (string.IsNullOrWhiteSpace(s.LocalAiModel) && !s.LocalAiDisabledByUser &&
+                await LocalAiDetector.DetectAsync(s.LocalAiUrl, ctx.RequestAborted) is { } found)
+            {
+                s = s with { LocalAiModel = found, LocalAiAutoDetected = true };
+                settings.Save(s);
+            }
             var r = rf();
             return Results.Ok(new
             {
@@ -36,7 +43,7 @@ public static partial class Api
                 ocr = new { available = of().IsAvailable },
                 ai = new
                 {
-                    localConfigured = !string.IsNullOrWhiteSpace(s.LocalAiModel), localModel = s.LocalAiModel,
+                    localConfigured = !string.IsNullOrWhiteSpace(s.LocalAiModel), localModel = s.LocalAiModel, localAutoDetected = s.LocalAiAutoDetected,
                     cloudReady = s.CloudConsentAt != null && secrets.Get("anthropic") is { Length: > 0 }, cloudModel = s.CloudModel,
                 },
                 maxUploadMb = MaxUpload / (1024 * 1024),
@@ -133,6 +140,13 @@ public static partial class Api
             return err == null ? Results.Ok(new { ok = true }) : Problem(err);
         });
 
+        api.MapPost("/jobs/{id}/accept-all", (string id, JobService jobs) =>
+        {
+            if (!JobId().IsMatch(id)) return Results.NotFound();
+            var (count, err) = jobs.AcceptAll(id);
+            return err == null ? Results.Ok(new { ok = true, count }) : Problem(err);
+        });
+
         api.MapGet("/jobs/{id}/image/{key}", (string id, string key, Paths paths) =>
         {
             if (!JobId().IsMatch(id) || !ImageKey().IsMatch(key)) return Results.NotFound();
@@ -182,6 +196,8 @@ public static partial class Api
             {
                 LocalAiUrl = b.LocalAiUrl ?? cur.LocalAiUrl,
                 LocalAiModel = b.LocalAiModel == null ? cur.LocalAiModel : (b.LocalAiModel.Length == 0 ? null : b.LocalAiModel),
+                LocalAiAutoDetected = b.LocalAiModel == null && cur.LocalAiAutoDetected,
+                LocalAiDisabledByUser = b.LocalAiModel == null ? cur.LocalAiDisabledByUser : b.LocalAiModel.Length == 0,
                 CloudModel = b.CloudModel ?? cur.CloudModel,
                 RetentionDays = b.RetentionDays ?? cur.RetentionDays,
                 Rendering = b.Rendering ?? cur.Rendering,

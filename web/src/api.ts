@@ -10,6 +10,7 @@ export const Session = z.object({
   ai: z.object({
     localConfigured: z.boolean(),
     localModel: z.string().nullable().optional(),
+    localAutoDetected: z.boolean().optional(),
     cloudReady: z.boolean(),
     cloudModel: z.string(),
   }),
@@ -154,6 +155,8 @@ export const api = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ decisions }),
     }),
+  acceptAll: (id: string) =>
+    call(z.object({ ok: z.boolean(), count: z.number() }), `/api/jobs/${encodeURIComponent(id)}/accept-all`, { method: "POST" }),
   settings: () => call(Settings, "/api/settings"),
   saveSettings: (s: Partial<Settings> & { cloudConsent?: boolean }) =>
     call(Settings, "/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) }),

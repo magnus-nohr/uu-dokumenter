@@ -118,6 +118,19 @@ public sealed class WebApiTests : IDisposable
         var after = await WaitDone(c, id);
         Assert.Contains(after.GetProperty("summary").GetProperty("sentences").EnumerateArray(), s => s.GetString()!.Contains("Naturfag – planter"));
 
+        // «Bruk alle forslag»: alle ventende forslag med innhold brukes, og usikkerheten beholdes i rapporten.
+        var pendingBefore = (await c.GetFromJsonAsync<JsonElement>($"/api/jobs/{id}/review")).GetProperty("items").EnumerateArray()
+            .Count(i => i.GetProperty("pending").GetBoolean() && i.GetProperty("value").GetString()!.Length > 0);
+        if (pendingBefore > 0)
+        {
+            var all = await (await c.PostAsync($"/api/jobs/{id}/accept-all", null)).Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal(pendingBefore, all.GetProperty("count").GetInt32());
+            await WaitDone(c, id);
+            var left = (await c.GetFromJsonAsync<JsonElement>($"/api/jobs/{id}/review")).GetProperty("items").EnumerateArray()
+                .Count(i => i.GetProperty("pending").GetBoolean() && i.GetProperty("value").GetString()!.Length > 0);
+            Assert.Equal(0, left);
+        }
+
         // Ugyldig handling avvises med forklaring
         var bad = await c.PostAsJsonAsync($"/api/jobs/{id}/review", new { decisions = new[] { new { changeId = "C9999", action = "accept" } } });
         Assert.Equal(HttpStatusCode.BadRequest, bad.StatusCode);

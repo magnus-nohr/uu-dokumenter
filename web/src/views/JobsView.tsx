@@ -16,6 +16,7 @@ export function JobsView({ ids }: { ids?: string[] }) {
   const [error, setError] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");
   const lastStage = useRef(new Map<string, string>());
+  const [round, setRound] = useState(0);   // øker for å starte statusoppdatering på nytt etter «Bruk alle forslag»
 
   useEffect(() => {
     let stop = false;
@@ -46,7 +47,15 @@ export function JobsView({ ids }: { ids?: string[] }) {
     };
     void tick();
     return () => { stop = true; window.clearTimeout(timer); };
-  }, [ids]);
+  }, [ids, round]);
+
+  const acceptAll = async (id: string, name: string) => {
+    try {
+      const r = await api.acceptAll(id);
+      setAnnounce(`${r.count} forslag brukes i ${name}. Filen lages på nytt.`);
+      setRound(round + 1);
+    } catch (e) { setError(e instanceof ApiError ? e.message : "Kunne ikke bruke forslagene."); }
+  };
 
   const cancel = async (id: string) => {
     try { await api.cancel(id); } catch (e) { setError(e instanceof ApiError ? e.message : "Kunne ikke avbryte."); }
@@ -82,6 +91,20 @@ export function JobsView({ ids }: { ids?: string[] }) {
           {job.error && <div className="alert error"><p>{job.error}</p></div>}
           {job.status === "done" && summary && (
             <>
+              {summary.pendingReview > 0 && (
+                <div className="callout">
+                  <p>
+                    <strong>{summary.pendingReview} forslag venter.</strong> Du kan bruke alle med ett klikk, eller gå gjennom dem. Forslag som
+                    brukes uten gjennomgang, merkes som ikke kontrollert i rapporten.
+                  </p>
+                  <div className="actions">
+                    <button type="button" className="primary" onClick={() => void acceptAll(job.id, job.name)}>
+                      Bruk alle forslag ({summary.pendingReview})<span className="visually-hidden"> i {job.name}</span>
+                    </button>
+                    <a className="button" href={`#/jobb/${job.id}/gjennomga`}>Gå gjennom forslagene</a>
+                  </div>
+                </div>
+              )}
               <h3>Resultat</h3>
               <ul>{summary.sentences.map((s) => <li key={s}>{s}</li>)}</ul>
               <div className="actions">

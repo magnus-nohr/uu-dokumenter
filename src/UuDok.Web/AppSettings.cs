@@ -8,6 +8,10 @@ public sealed record AppSettings
 {
     public string LocalAiUrl { get; init; } = "http://127.0.0.1:11434";
     public string? LocalAiModel { get; init; }
+    /// <summary>Modellen ble funnet automatisk (ikke valgt av brukeren).</summary>
+    public bool LocalAiAutoDetected { get; init; }
+    /// <summary>Brukeren har slått av lokal KI (tomt modellnavn); da søkes det ikke automatisk igjen.</summary>
+    public bool LocalAiDisabledByUser { get; init; }
     public string CloudProvider { get; init; } = "anthropic";
     public string CloudModel { get; init; } = UuDok.Ai.AnthropicProvider.DefaultModel;
     /// <summary>Tidspunkt brukeren godkjente at bilder og nærliggende tekst sendes til skyleverandøren. Null = ikke godkjent.</summary>

@@ -8,7 +8,7 @@ export function StartView({ session }: { session: Session }) {
   const [files, setFiles] = useState<File[]>([]);
   const [mode, setMode] = useState("PreserveAppearance");
   const [ai, setAi] = useState(session.ai.localConfigured ? "local" : "none");
-  const [aiMode, setAiMode] = useState("Automatic");
+  const [aiMode, setAiMode] = useState("BestEffort");   // «godt nok» er standard
   const [allowSig, setAllowSig] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -122,7 +122,9 @@ export function StartView({ session }: { session: Session }) {
           <input type="radio" id="a1" name="ai" value="local" checked={ai === "local"} disabled={!session.ai.localConfigured} onChange={(e) => setAi(e.target.value)}
             aria-describedby="a1h" />
           <label htmlFor="a1"><strong>Lokal KI-modell</strong>{session.ai.localModel ? ` (${session.ai.localModel})` : ""}</label><br />
-            <span className="hint" id="a1h">{session.ai.localConfigured ? "Bildene behandles på denne maskinen." : "Ikke satt opp. Se Innstillinger."}</span>
+            <span className="hint" id="a1h">{session.ai.localConfigured
+              ? (session.ai.localAutoDetected ? "Funnet automatisk på denne maskinen. Bildene behandles lokalt." : "Bildene behandles på denne maskinen.")
+              : "Ingen lokal bildemodell funnet. Se Hjelp eller Innstillinger."}</span>
         </div>
         <div className="choice">
           <input type="radio" id="a2" name="ai" value="cloud" checked={ai === "cloud"} disabled={!session.ai.cloudReady} onChange={(e) => setAi(e.target.value)}
@@ -134,9 +136,9 @@ export function StartView({ session }: { session: Session }) {
           <div className="sub">
             <label htmlFor="aimode">Når forslagene er usikre:</label>
             <select id="aimode" value={aiMode} onChange={(e) => setAiMode(e.target.value)}>
-              <option value="Automatic">Automatisk – bruk sikre forslag, vis resten etterpå</option>
+              <option value="BestEffort">Godt nok (anbefalt) – bruk forslagene automatisk og merk de usikre</option>
+              <option value="Automatic">Forsiktig – bruk bare sikre forslag, vis resten etterpå</option>
               <option value="Review">Gjennomgå forslag – jeg vurderer de usikre selv</option>
-              <option value="BestEffort">Gjør det beste du kan – bruk flere forslag, men merk usikkerhet</option>
             </select>
           </div>
         )}

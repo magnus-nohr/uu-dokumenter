@@ -21,8 +21,8 @@
 
 ## Starte og stoppe
 
-- **Start:** dobbeltklikk `start.bat`. Appen åpnes i nettleseren på <http://127.0.0.1:5317/>. Den er bare tilgjengelig
-  fra denne maskinen.
+- **Start:** dobbeltklikk ikonet **UU-dokumenter** på skrivebordet (installeren lager det), eller `start.bat`. Appen
+  åpnes i nettleseren på <http://127.0.0.1:5317/>. Den er bare tilgjengelig fra denne maskinen.
 - **Stopp:** dobbeltklikk `stopp.bat`. Jobber som var i gang, fortsetter neste gang appen startes.
 
 Data (jobber, innstillinger) lagres i `%LOCALAPPDATA%\UuDok`. API-nøkler lagres i Windows Legitimasjonsbehandling.
@@ -35,14 +35,17 @@ Data (jobber, innstillinger) lagres i `%LOCALAPPDATA%\UuDok`. API-nøkler lagres
    - *Tillat synlige forbedringer*: du kan i tillegg velge synlige endringer (kontrast, lenketekster). De lagres i en
      egen fil, og originalvarianten finnes fortsatt.
 3. **Velg beskrivelser:** *Uten KI*, *Lokal KI-modell* eller *Skytjeneste* (bare hvis du har godkjent den i
-   Innstillinger). Når KI er valgt, bestemmer du hva som skjer med usikre forslag:
-   - *Automatisk*: sikre forslag brukes, resten vises etterpå.
+   Innstillinger). Finnes en lokal bildemodell (Ollama) på maskinen, velger appen den automatisk. Når KI er valgt,
+   bestemmer du hva som skjer med usikre forslag:
+   - *Godt nok* (standard): forslagene brukes automatisk og merkes som usikre i rapporten. Bare forslag med tall eller
+     navn som ikke finnes i kildene, holdes tilbake.
+   - *Forsiktig*: bare sikre forslag brukes, resten vises etterpå.
    - *Gjennomgå forslag*: du vurderer de usikre.
-   - *Gjør det beste du kan*: flere forslag brukes, men de merkes som usikre. Forslag med tall eller navn som ikke
-     finnes i kildene, brukes aldri automatisk.
 4. **Forbedre filene.** Du ser fremdrift og kan avbryte.
 5. **Resultat:** les oppsummeringen og last ned den forbedrede filen og rapporten (HTML eller JSON).
-6. **Gjennomgå forslag:** for hvert forslag ser du bildet, konteksten, eksisterende tekst, forslaget og hvorfor det er
+6. **Bruk alle forslag:** øverst i resultatet (og i gjennomgangen) bruker én knapp alle forslagene som venter, og
+   lager filen på nytt. Forslagene merkes som «ikke kontrollert enkeltvis» i rapporten.
+7. **Gjennomgå forslag (valgfritt):** for hvert forslag ser du bildet, konteksten, eksisterende tekst, forslaget og hvorfor det er
    usikkert. Velg *Godta*, *Rediger*, *Behold original* eller *Hopp over*. Like problemer er gruppert, men hvert bilde
    beholder sin egen beskrivelse. Etterpå lages filen på nytt og kontrolleres igjen.
 

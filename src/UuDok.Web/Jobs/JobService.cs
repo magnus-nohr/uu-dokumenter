@@ -96,6 +96,11 @@ public sealed class JobService(JobStore store, Paths paths, SettingsService sett
                     state.Changes[state.Changes.IndexOf(c)] = nc;
                     SupersedeOthers(state, nc);
                     break;
+                case "acceptBulk": // «Bruk alle forslag»: brukt uten enkeltvis kontroll, så usikkerheten beholdes i rapporten
+                    if (c.Value.Length == 0) break;
+                    c.PendingReview = false; c.Status = ChangeStatus.Planned; c.StatusNote = "Brukt med «Bruk alle forslag» (ikke kontrollert enkeltvis).";
+                    SupersedeOthers(state, c);
+                    break;
                 case "keep":      // behold original
                 case "skip":      // hopp over
                     c.PendingReview = false; c.Status = ChangeStatus.Skipped;
@@ -111,6 +116,17 @@ public sealed class JobService(JobStore store, Paths paths, SettingsService sett
         store.Update(id, JobStatus.Reviewing, "Bruker valgene dine", 70);
         _queue.Writer.TryWrite((id, true));
         return null;
+    }
+
+    /// <summary>Bruker alle ventende forslag som har innhold. Returnerer antall, eller en feilmelding.</summary>
+    public (int Count, string? Error) AcceptAll(string id)
+    {
+        var state = Pipeline.LoadState(paths.Work(id));
+        if (state == null) return (0, "Fant ikke jobbdata.");
+        var decisions = state.Changes.Where(c => c.PendingReview && c.Value.Length > 0)
+            .Select(c => new ReviewDecision(c.Id, "acceptBulk", null)).ToList();
+        if (decisions.Count == 0) return (0, "Det er ingen forslag å bruke.");
+        return (decisions.Count, SubmitReview(id, decisions));
     }
 
     /// <summary>

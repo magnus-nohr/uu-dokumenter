@@ -62,6 +62,9 @@ if not exist publish\helper\UuDok.WinHelper.exe goto :feil
 if not exist publish\wwwroot\index.html goto :feil
 publish\helper\UuDok.WinHelper.exe office-info
 
+echo Lager snarvei paa skrivebordet...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0tools\lag-snarvei.ps1" || echo Snarveien kunne ikke lages. Start appen med start.bat.
+
 echo.
 echo Ferdig. Start appen med start.bat.
 exit /b 0

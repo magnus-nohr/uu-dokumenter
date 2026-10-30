@@ -70,9 +70,19 @@ export function ReviewView({ id }: { id: string }) {
   return (
     <div>
       <h1>Gjennomgå forslag</h1>
+      {pending > 0 && (
+        <div className="callout">
+          <p>Har du ikke tid til å gå gjennom alt? Bruk alle forslagene med ett klikk. De merkes som ikke kontrollert i rapporten.</p>
+          <button type="button" className="primary" disabled={busy} onClick={async () => {
+            setBusy(true);
+            try { await api.acceptAll(id); navigate(`/jobber/${id}`); }
+            catch (e) { setError(e instanceof ApiError ? e.message : "Kunne ikke bruke forslagene."); setBusy(false); }
+          }}>Bruk alle forslag ({items.filter((i) => i.pending && i.value).length})</button>
+        </div>
+      )}
       <p>
-        {pending > 0 ? `${pending} forslag venter på deg.` : "Ingen forslag venter."} Du kan godta, redigere, beholde originalen eller hoppe over.
-        Når du er ferdig, lagres valgene og filen kontrolleres på nytt.
+        {pending > 0 ? `${pending} forslag venter på deg.` : "Ingen forslag venter."} Du kan også gå gjennom dem ett og ett: godta, redigere, beholde originalen
+        eller hoppe over. Når du er ferdig, lagres valgene og filen kontrolleres på nytt.
       </p>
       <fieldset className="inline">
         <legend>Vis</legend>
