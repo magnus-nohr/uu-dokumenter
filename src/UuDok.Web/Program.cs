@@ -55,7 +55,12 @@ app.MapFallback(async ctx =>
     if (ctx.Request.Path.StartsWithSegments("/api")) { ctx.Response.StatusCode = 404; return; }
     var index = Path.Combine(app.Environment.WebRootPath ?? "wwwroot", "index.html");
     if (File.Exists(index)) { ctx.Response.ContentType = "text/html; charset=utf-8"; await ctx.Response.SendFileAsync(index); }
-    else { ctx.Response.StatusCode = 503; await ctx.Response.WriteAsync("Grensesnittet er ikke bygget. Kjør installer.bat."); }
+    else
+    {
+        ctx.Response.StatusCode = 503;
+        ctx.Response.ContentType = "text/plain; charset=utf-8";
+        await ctx.Response.WriteAsync("Grensesnittet mangler. Stopp appen med stopp.bat, kjør installer.bat og start på nytt med start.bat.");
+    }
 });
 
 app.Lifetime.ApplicationStarted.Register(() =>
