@@ -63,7 +63,9 @@ public static partial class ResponseValidator
         var review = s.RequiresReview;
         var sources = string.Join(" ", req.OcrText, req.ChartData, req.Caption, req.NearbyText, req.HeadingOrSlideTitle, req.ExistingAltText, req.QrPayload, req.TextUsedAsSlideTitle);
 
-        if (Math.Min(req.ImageWidth, req.ImageHeight) is > 0 and < 64) { review = true; reasons.Add("Bildet er svært lite; detaljer kan være feiltolket."); }
+        // Lite bilde: lite areal eller kort lengste side. Smale skillelinjer (lange, tynne) regnes ikke som små.
+        if (req.ImageWidth > 0 && req.ImageHeight > 0 && (Math.Max(req.ImageWidth, req.ImageHeight) < 120 || req.ImageWidth * req.ImageHeight < 64 * 64))
+        { review = true; reasons.Add("Bildet er svært lite; detaljer kan være feiltolket."); }
         if (s.FunctionalRole is FunctionalRole.map or FunctionalRole.composite or FunctionalRole.formula or FunctionalRole.unknown)
         { review = true; reasons.Add($"Rollen «{s.FunctionalRole}» er kompleks eller usikker."); }
         if (s.FunctionalRole == FunctionalRole.chart && string.IsNullOrEmpty(req.ChartData))
@@ -74,24 +76,53 @@ public static partial class ResponseValidator
             .Where(n => !sources.Contains(n, StringComparison.Ordinal)).Distinct().ToList();
         if (unsupportedNumbers.Count > 0) { review = true; reasons.Add($"Tall som ikke finnes i kildene: {string.Join(", ", unsupportedNumbers.Take(5))}."); }
 
+        // Antall skrevet med ord («fem former») er like risikabelt som sifre: små modeller teller ofte feil.
+        var numberWords = NumberWords().Matches(s.ProposedAltText + " " + s.ProposedLongDescription).Select(m => m.Value.ToLowerInvariant())
+            .Where(w => !Regex.IsMatch(sources, $@"\b{w}\b", RegexOptions.IgnoreCase)).Distinct().ToList();
+        if (numberWords.Count > 0) { review = true; reasons.Add($"Antall som ikke finnes i kildene: {string.Join(", ", numberWords.Take(5))}."); }
+
         var names = ProperNouns(s.ProposedAltText).Where(w => !sources.Contains(w, StringComparison.Ordinal)).Distinct().ToList();
         if (names.Count > 0) { review = true; reasons.Add($"Mulige navn som ikke finnes i kildene: {string.Join(", ", names.Take(5))}."); }
 
         if (req.TextUsedAsSlideTitle is { Length: > 3 } t && s.ProposedAltText.Contains(t, StringComparison.OrdinalIgnoreCase) && s.FunctionalRole != FunctionalRole.textImage)
-            reasons.Add("Gjentar lysbildetittelen.");
+        { review = true; reasons.Add("Gjentar lysbildetittelen, som allerede leses."); }
         if (req.NearbyText is { Length: > 20 } nb && s.ProposedAltText.Length > 20 && nb.Contains(s.ProposedAltText, StringComparison.OrdinalIgnoreCase))
         { review = true; reasons.Add("Teksten gjentar tekst som allerede leses rundt bildet."); }
         if (s.SuggestedAction == SuggestedAction.markDecorative && !string.IsNullOrWhiteSpace(req.ExistingAltText))
         { review = true; reasons.Add("Objektet har allerede en beskrivelse."); }
 
-        return s with { RequiresReview = review, UncertaintyReasons = reasons.Distinct().ToList() };
+        // Observert med gemma3:12b: handlingen motsier innholdet (informativ beskrivelse + «marker som dekorativ»
+        // eller «trenger menneske»). Teksten beholdes som forslag til gjennomgang; ingenting brukes automatisk.
+        var action = s.SuggestedAction;
+        if (s.ProposedAltText.Length > 0 && s.FunctionalRole != FunctionalRole.decorative &&
+            action is SuggestedAction.markDecorative or SuggestedAction.needsHuman)
+        {
+            review = true;
+            reasons.Add("Modellens svar var selvmotsigende (beskrivelse, men foreslått handling passet ikke).");
+            action = SuggestedAction.setAltText;
+        }
+        if (action == SuggestedAction.markDecorative && s.FunctionalRole != FunctionalRole.decorative)
+        { review = true; reasons.Add("Modellen foreslo dekorativ uten å klassifisere bildet som dekorasjon."); }
+
+        // Observert med gemma3:12b: «behold eksisterende» for bilder uten beskrivelse. Det er ikke et gyldig svar.
+        if (action == SuggestedAction.keepExisting && string.IsNullOrWhiteSpace(req.ExistingAltText))
+        {
+            review = true;
+            reasons.Add("Modellen foreslo å beholde en beskrivelse som ikke finnes.");
+            action = s.ProposedAltText.Length > 0 ? SuggestedAction.setAltText : SuggestedAction.needsHuman;
+        }
+
+        return s with { RequiresReview = review, SuggestedAction = action, UncertaintyReasons = reasons.Distinct().ToList() };
     }
 
     /// <summary>Om forslaget har tegn på oppdiktede opplysninger. Slike forslag brukes aldri automatisk.</summary>
     public static bool HasFabricationFlags(AltTextSuggestion s) =>
-        s.UncertaintyReasons.Any(r => r.StartsWith("Tall som ikke finnes") || r.StartsWith("Mulige navn"));
+        s.UncertaintyReasons.Any(r => r.StartsWith("Tall som ikke finnes") || r.StartsWith("Antall som ikke finnes") || r.StartsWith("Mulige navn"));
 
     [GeneratedRegex(@"\d+(?:[.,]\d+)?")] private static partial Regex Numbers();
+    // «en/ett/ei» utelatt: de er oftest ubestemt artikkel, ikke antall.
+    [GeneratedRegex(@"\b(to|tre|fire|fem|seks|sju|syv|åtte|ni|ti|elleve|tolv|tretten|fjorten|femten|tjue|hundre|tusen|dusin|par|two|three|four|five|six|seven|eight|nine|ten)\b", RegexOptions.IgnoreCase)]
+    private static partial Regex NumberWords();
     [GeneratedRegex(@"(?<=[\p{Ll},;:]\s)\p{Lu}[\p{Ll}]{2,}")] private static partial Regex Proper();
     [GeneratedRegex(@"^(et |ett |en )?(bilde|foto|fotografi|illustrasjon) (av|som viser|med) ", RegexOptions.IgnoreCase)] private static partial Regex ImageOf();
     [GeneratedRegex(@"[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]")] private static partial Regex Control();

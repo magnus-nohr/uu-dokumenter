@@ -1,0 +1,8 @@
+﻿id;modell;rolle;forventetRolle;rolleOk;altTekst;maaNevneOk;forbudtFunnet;starterMedBildeAv;gjennomgang;usikkerhet;sekunder;korrekthet(0-2);relevans(0-2);kontekst(0-2);lesbarhet(0-2);unødvendigGjentakelse(0-2);oppdiktedeDetaljer(0-2);kommentar
+ki-tittelbilde;gemma3:12b;informative;informative/textImage/composite;ja;"Fotosyntese viser en sol og fem runde former som representerer planteceller.";nei;"Fotosyntese";nei;nei;"Gjentar lysbildetittelen.";78.2;;;;;;;
+graf-elever;gemma3:12b;chart;chart;ja;"Søylene viser antall elever i 8. trinn (24), 9. trinn (31) og 10. trinn (27).";ja;"";nei;ja;"Graf uten tilgang til underliggende data; tall kan ikke kontrolleres. Tall som ikke finnes i kildene: 8, 24, 9, 31, 10.";2.6;;;;;;;
+skjermbilde-lagre;gemma3:12b;screenshot;screenshot;ja;"Skjermbilde av et dokumentvindu som viser knappen 'Lagre' med en rød ramme rundt. Dokumentet heter 'Dokument1' og det står at endringer ikke er lagret.";ja;"";nei;ja;"Tall som ikke finnes i kildene: 1.";7.4;;;;;;;
+qr-oppgave;gemma3:12b;qrCode;qrCode;ja;"Lenke til oppgave 3 på example.org/uu-test.";ja;"";nei;nei;"";2.2;;;;;;;
+celle;gemma3:12b;informative;informative/composite;ja;"Skjematisk tegning av en plantecelle med cellevegg i grønn kant og cellekjerne i lilla sentrum. Linjer peker på disse delene.";ja;"";nei;nei;"";2.6;;;;;;;
+dekor-linje;gemma3:12b;decorative;decorative;ja;"";ja;"";nei;ja;"Bildet er svært lite; detaljer kan være feiltolket.";1.8;;;;;;;
+lite-uskarpt;gemma3:12b;decorative;unknown/textImage/informative;nei;"";ja;"";nei;ja;"Bildet er svært lite; detaljer kan være feiltolket.";1.9;;;;;;;

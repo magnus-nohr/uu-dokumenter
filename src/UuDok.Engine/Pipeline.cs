@@ -142,8 +142,11 @@ public sealed class Pipeline(IRenderer renderer, IOcrService ocr, Func<IAltTextP
         };
         if (provider != null && !(model.HasProtection || model.IsProtectedFromIntake))
         {
+            // Sikre dekorasjoner (tynne linjer, koblinger) og QR-koder med dekodet innhold sendes ikke til KI.
+            var skip = analysis.Findings.Where(f => f.RuleId == "DECOR-CANDIDATE" && f.Outcome == RuleOutcome.Failed).Select(f => f.Object.ToString())
+                .Concat(qr.Keys).ToHashSet();
             var targets = analysis.Findings.Where(f => f.RuleId is "ALT-MISSING" or "ALT-POOR" or "ALT-TEXTIMAGE")
-                .Select(f => f.Object.ToString()).Distinct().Where(prepared.ContainsKey).Take(opt.MaxAiImages).ToList();
+                .Select(f => f.Object.ToString()).Distinct().Where(k => prepared.ContainsKey(k) && !skip.Contains(k)).Take(opt.MaxAiImages).ToList();
             int i = 0;
             foreach (var key in targets)
             {

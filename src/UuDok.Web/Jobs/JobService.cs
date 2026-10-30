@@ -82,6 +82,7 @@ public sealed class JobService(JobStore store, Paths paths, SettingsService sett
                     if (c.Value.Length == 0) return "Forslaget mangler tekst; bruk «Rediger».";
                     c.PendingReview = false; c.Status = ChangeStatus.Planned; c.StatusNote = "Godtatt av bruker.";
                     c.UncertaintyReasons.Clear();   // brukeren har vurdert forslaget
+                    SupersedeOthers(state, c);
                     break;
                 case "edit":
                     var v = ResponseValidator.Clean(d.Value ?? "");
@@ -91,6 +92,7 @@ public sealed class JobService(JobStore store, Paths paths, SettingsService sett
                         return "Dette forslaget kan ikke redigeres.";
                     var nc = Clone(c, v.TrimStart('#'));
                     state.Changes[state.Changes.IndexOf(c)] = nc;
+                    SupersedeOthers(state, nc);
                     break;
                 case "keep":      // behold original
                 case "skip":      // hopp over
@@ -107,6 +109,20 @@ public sealed class JobService(JobStore store, Paths paths, SettingsService sett
         store.Update(id, JobStatus.Reviewing, "Bruker valgene dine", 70);
         _queue.Writer.TryWrite((id, true));
         return null;
+    }
+
+    /// <summary>
+    /// Når brukeren godtar eller redigerer en tekst, erstatter den andre tekster for samme objekt
+    /// (for eksempel «Tekst i bildet: …» som ble brukt mens KI-forslaget ventet).
+    /// </summary>
+    private static void SupersedeOthers(JobState state, PlannedChange chosen)
+    {
+        foreach (var o in state.Changes.Where(o => !ReferenceEquals(o, chosen) && o.Kind == chosen.Kind && o.Target.ToString() == chosen.Target.ToString()))
+        {
+            o.PendingReview = false;
+            o.Status = ChangeStatus.Skipped;
+            o.StatusNote = $"Erstattet av {chosen.Id}.";
+        }
     }
 
     private static PlannedChange Clone(PlannedChange c, string value) => new()

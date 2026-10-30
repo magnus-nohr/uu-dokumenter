@@ -57,6 +57,72 @@ public class AiAndPipelineTests
     }
 
     [Fact]
+    public void Antall_med_ord_og_gjentatt_tittel_krever_gjennomgang()
+    {
+        // Observert med gemma3:12b: «Fotosyntese viser en sol og fem runde former …» (det er sju former, og tittelen gjentas).
+        var req = Req() with { TextUsedAsSlideTitle = "Fotosyntese", NearbyText = "" };
+        var (s, _) = ResponseValidator.Parse(Json("Fotosyntese viser en sol og fem runde former."), req);
+        Assert.True(s!.RequiresReview);
+        Assert.Contains(s.UncertaintyReasons, r => r.Contains("fem"));
+        Assert.Contains(s.UncertaintyReasons, r => r.StartsWith("Gjentar lysbildetittelen"));
+        Assert.True(ResponseValidator.HasFabricationFlags(s));
+        // «en sol» (artikkel) alene er ikke et antall
+        Assert.False(ResponseValidator.Parse(Json("En sol over grønne blader."), Req() with { NearbyText = "" }).Suggestion!.RequiresReview);
+    }
+
+    [Fact]
+    public void Behold_eksisterende_uten_eksisterende_tekst_avvises()
+    {
+        // Observert med gemma3:12b: keepExisting for bilder som manglet beskrivelse.
+        var (s, _) = ResponseValidator.Parse(Json("", action: "keepExisting"), Req());
+        Assert.Equal(SuggestedAction.needsHuman, s!.SuggestedAction);
+        Assert.True(s.RequiresReview);
+    }
+
+    [Fact]
+    public async Task Ubrukelig_KI_svar_fortrenger_ikke_faktabaserte_beskrivelser()
+    {
+        // Modellen svarer «behold eksisterende» på alt. QR (lokalt dekodet) og SmartArt skal likevel få beskrivelse.
+        var mock = new MockProvider(r => Json("", action: "keepExisting", id: r.ObjectId));
+        var st = await new Pipeline(new UuDok.Rendering.NoRenderer(), new NoOcr(), () => mock)
+            .RunAsync(Corpus.Bytes("office-presentasjon.pptx"), Corpus.TempDir(), new JobOptions { AiMode = AiMode.Automatic, EnableRendering = false }, new NullProgress(), default);
+        Assert.Contains(st.Changes, c => c.Value.StartsWith("QR-kode som peker til https://example.org") && c.Status == ChangeStatus.Applied);
+        Assert.Contains(st.Changes, c => c.Value.StartsWith("SmartArt:") && c.Status == ChangeStatus.Applied);
+        Assert.DoesNotContain(st.Findings, f => f.ResultNote?.Contains("eksisterende teksten som dekkende") == true && f.RuleId == "ALT-MISSING");
+    }
+
+    [Fact]
+    public void Selvmotsigende_svar_blir_forslag_til_gjennomgang()
+    {
+        // Observert med gemma3:12b: informativ beskrivelse + «markDecorative» / «needsHuman».
+        var (a, _) = ResponseValidator.Parse(Json("Skjematisk tegning av en plantecelle.", action: "markDecorative"), Req());
+        Assert.Equal(SuggestedAction.setAltText, a!.SuggestedAction);
+        Assert.True(a.RequiresReview);
+        var (b, _) = ResponseValidator.Parse(Json("Skjematisk tegning av en plantecelle.", action: "needsHuman"), Req());
+        Assert.Equal(SuggestedAction.setAltText, b!.SuggestedAction);
+        Assert.True(b.RequiresReview);
+    }
+
+    [Fact]
+    public async Task Tekst_fra_bildet_brukes_mens_usikkert_KI_forslag_venter()
+    {
+        var ocr = new FakeOcr(new() { ["Fotosyntese"] = 140, ["Slik lager plantene næring av sollys"] = 63 });
+        var mock = new MockProvider(r => Json("Sol over syv grønne blader.", review: true, id: r.ObjectId));
+        var st = await new Pipeline(new UuDok.Rendering.NoRenderer(), ocr, () => mock)
+            .RunAsync(Corpus.Bytes("office-presentasjon.pptx"), Corpus.TempDir(), new JobOptions { AiMode = AiMode.Automatic, EnableRendering = false }, new NullProgress(), default);
+        var forSlide = st.Changes.Where(c => c.Kind == ChangeKind.SetAltText && c.Target.PartUri == "/ppt/slides/slide3.xml").ToList();
+        Assert.Contains(forSlide, c => c.Origin == ChangeOrigin.Ocr && c.Status == ChangeStatus.Applied);
+        Assert.Contains(forSlide, c => c.Origin == ChangeOrigin.Ai && c.PendingReview);
+    }
+
+    [Fact]
+    public void Smal_skillelinje_regnes_ikke_som_lite_bilde()
+    {
+        var (s, _) = ResponseValidator.Parse(Json("", role: "decorative", action: "markDecorative"), Req(w: 1600, h: 40));
+        Assert.DoesNotContain(s!.UncertaintyReasons, r => r.Contains("svært lite"));
+    }
+
+    [Fact]
     public void Lite_bilde_og_graf_uten_data_markeres_usikkert()
     {
         Assert.True(ResponseValidator.Parse(Json("En figur."), Req(w: 40, h: 30)).Suggestion!.RequiresReview);

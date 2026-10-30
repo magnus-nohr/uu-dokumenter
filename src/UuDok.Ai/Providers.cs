@@ -58,6 +58,9 @@ public sealed class OllamaProvider : IAltTextProvider
             var json = await resp.Content.ReadFromJsonAsync<JsonObject>(ct);
             var content = (string?)json?["message"]?["content"];
             if (content == null) return AiResult.Fail(Id, Model, true, "Tomt svar fra lokal modell.");
+            // Bare for utvikling: rå svar til fil når UUDOK_AI_DEBUG er satt (kan inneholde dokumentinnhold).
+            if (Environment.GetEnvironmentVariable("UUDOK_AI_DEBUG") is { Length: > 0 } dbg)
+                await File.AppendAllTextAsync(dbg, Prompt.User(req) + "\n>>> " + content + "\n\n", ct);
             var (s, errors) = ResponseValidator.Parse(content, req);
             return s != null ? new AiResult(s, null, Id, Model, true) : AiResult.Fail(Id, Model, true, "Ugyldig svar fra modellen: " + string.Join("; ", errors));
         }

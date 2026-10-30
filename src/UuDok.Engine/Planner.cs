@@ -68,7 +68,8 @@ public static class Planner
         foreach (var f in p.Analysis.Findings.Where(f => f.RuleId is "ALT-MISSING" or "ALT-POOR" or "ALT-TEXTIMAGE"))
         {
             var key = f.Object.ToString();
-            if (decorSure.Contains(key) && !p.Ai.ContainsKey(key)) continue;
+            // Geometrisk sikre linjer håndteres som dekorasjon; KI-tolkning av dem er observert å dikte opp innhold.
+            if (decorSure.Contains(key)) continue;
             if (!byRef.TryGetValue(key, out var o) || !altPlanned.Add(key)) { LinkExisting(plan, key, f); continue; }
             var related = findingsByObj.GetValueOrDefault(key, [f]).Where(x => x.RuleId is "ALT-MISSING" or "ALT-POOR" or "ALT-TEXTIMAGE" or "ALT-COMPLEX").ToList();
             var display = new Dictionary<string, string>
@@ -82,6 +83,16 @@ public static class Planner
             var poor = f.RuleId == "ALT-POOR" || (!string.IsNullOrWhiteSpace(o.AltText));
             var repeatsCaption = poor && o.AltText != null && RuleEngine.AltProblem(o.AltText, o) == "gjentar bildeteksten ordrett";
 
+            // Lokalt dekodet QR-innhold er fakta og går foran KI-tolkning.
+            if (p.QrPayloads.TryGetValue(key, out var qrFirst) && !poor)
+            {
+                Add(ChangeKind.SetAltText, o.Ref, $"QR-kode som peker til {qrFirst}", ChangeOrigin.Ocr, related,
+                    "QR-koden er dekodet lokalt. Adressen er ikke åpnet.", false, fp: o.Fingerprint, display: display, group: "QR-koder");
+                continue;
+            }
+
+            List<string>? aiNeedsHuman = null;      // KI hadde ikke grunnlag: prøv faktabaserte kilder før tom gjennomgang
+            bool aiPending = false;                 // KI-forslag venter: bruk faktabasert tekst nå, KI-forslaget kan erstatte den
             if (p.Ai.TryGetValue(key, out var ai) && ai.Suggestion is { } s)
             {
                 display["role"] = s.FunctionalRole.ToString();
@@ -100,20 +111,20 @@ public static class Planner
                         Add(ChangeKind.SetAltText, o.Ref, s.ProposedAltText, ChangeOrigin.Ai, related,
                             poor ? "Erstatter en svak beskrivelse." : "Bildet manglet beskrivelse.", review, old: o.AltText, fp: o.Fingerprint,
                             uncertainty: s.UncertaintyReasons, display: display, group: GroupFor(o, poor));
+                        aiPending = review && !poor;
                         break;
                     case SuggestedAction.markDecorative when string.IsNullOrWhiteSpace(o.AltText):
                         Add(ChangeKind.SetDecorative, o.Ref, "1", ChangeOrigin.Ai, related, "KI vurderte objektet som ren dekorasjon.",
                             review || s.FunctionalRole != FunctionalRole.decorative, fp: o.Fingerprint, uncertainty: s.UncertaintyReasons, display: display, group: "Dekorasjoner");
                         break;
-                    case SuggestedAction.keepExisting:
+                    case SuggestedAction.keepExisting when !string.IsNullOrWhiteSpace(o.AltText):
                         foreach (var r in related) r.ResultNote = "KI vurderte den eksisterende teksten som dekkende. Den er beholdt.";
                         break;
                     default:
-                        Add(ChangeKind.SetAltText, o.Ref, "", ChangeOrigin.Ai, related, "KI hadde ikke nok grunnlag. Skriv beskrivelsen selv.", true,
-                            old: o.AltText, fp: o.Fingerprint, uncertainty: s.UncertaintyReasons, display: display, group: "Trenger menneskelig beskrivelse");
+                        aiNeedsHuman = s.UncertaintyReasons;
                         break;
                 }
-                continue;
+                if (aiNeedsHuman == null && !aiPending) continue;
             }
             if (p.Ai.TryGetValue(key, out var failed) && failed.Error != null) display["aiError"] = failed.Error;
 
@@ -130,12 +141,6 @@ public static class Planner
                     "Beskrivelse laget fra SmartArt-teksten.", false, fp: o.Fingerprint, display: display, group: "SmartArt");
                 continue;
             }
-            if (p.QrPayloads.TryGetValue(key, out var qr) && !poor)
-            {
-                Add(ChangeKind.SetAltText, o.Ref, $"QR-kode som peker til {qr}", ChangeOrigin.Ocr, related,
-                    "QR-koden er dekodet lokalt. Adressen er ikke åpnet.", false, fp: o.Fingerprint, display: display, group: "QR-koder");
-                continue;
-            }
             if (ocr is { Lines.Count: > 0 })
             {
                 var usedTitle = o.SlideNumber is { } sn2 && titledByOcr.TryGetValue(sn2, out var ttl) && ttl.Pic == key ? ttl.Title : null;
@@ -149,6 +154,13 @@ public static class Planner
                         display: display, group: "Tekst i bilder");
                     continue;
                 }
+            }
+            if (aiPending) continue;                // KI-forslaget venter; ingen faktabasert tekst å bruke i mellomtiden
+            if (aiNeedsHuman != null)
+            {
+                Add(ChangeKind.SetAltText, o.Ref, "", ChangeOrigin.Ai, related, "KI hadde ikke nok grunnlag. Skriv beskrivelsen selv.", true,
+                    old: o.AltText, fp: o.Fingerprint, uncertainty: aiNeedsHuman, display: display, group: "Trenger menneskelig beskrivelse");
+                continue;
             }
             foreach (var r in related) r.ResultNote ??= p.Options.AiMode == AiMode.None
                 ? "Ingen KI valgt: beskrivelsen må skrives manuelt." : "Ingen forslag kunne lages.";
