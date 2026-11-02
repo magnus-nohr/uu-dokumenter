@@ -18,11 +18,47 @@ public interface ISecretStore
 public sealed class WindowsCredentialStore : ISecretStore
 {
     private const string Prefix = "UuDok:";
+    private const string ChunkMarker = "uudok-deler:";
+    // CRED_MAX_CREDENTIAL_BLOB_SIZE er 5 × 512 byte. Tokens fra ChatGPT er større (observert ved første innlogging),
+    // så store hemmeligheter deles over flere oppføringer: «UuDok:navn» holder antallet, «UuDok:navn#0..n» delene.
+    private const int MaxChars = 1200;
     public bool IsAvailable => OperatingSystem.IsWindows();
 
     public void Set(string name, string secret)
     {
         if (!IsAvailable) throw new PlatformNotSupportedException("Sikker nøkkellagring finnes ikke på denne plattformen.");
+        DeleteChunks(name);
+        if (secret.Length <= MaxChars && !secret.StartsWith(ChunkMarker)) { Write(name, secret); return; }
+        var parts = Enumerable.Range(0, (secret.Length + MaxChars - 1) / MaxChars).Select(i => secret.Substring(i * MaxChars, Math.Min(MaxChars, secret.Length - i * MaxChars))).ToList();
+        for (int i = 0; i < parts.Count; i++) Write($"{name}#{i}", parts[i]);
+        Write(name, ChunkMarker + parts.Count);
+    }
+
+    public string? Get(string name)
+    {
+        var head = Read(name);
+        if (head == null || !head.StartsWith(ChunkMarker)) return head;
+        if (!int.TryParse(head[ChunkMarker.Length..], out var n)) return null;
+        var sb = new StringBuilder();
+        for (int i = 0; i < n; i++) { var part = Read($"{name}#{i}"); if (part == null) return null; sb.Append(part); }
+        return sb.ToString();
+    }
+
+    public void Delete(string name)
+    {
+        if (!IsAvailable) return;
+        DeleteChunks(name);
+        CredDelete(Prefix + name, 1, 0);
+    }
+
+    private void DeleteChunks(string name)
+    {
+        if (Read(name) is { } head && head.StartsWith(ChunkMarker) && int.TryParse(head[ChunkMarker.Length..], out var n))
+            for (int i = 0; i < n; i++) CredDelete($"{Prefix}{name}#{i}", 1, 0);
+    }
+
+    private static void Write(string name, string secret)
+    {
         var bytes = Encoding.Unicode.GetBytes(secret);
         var blob = Marshal.AllocHGlobal(bytes.Length);
         try
@@ -37,7 +73,8 @@ public sealed class WindowsCredentialStore : ISecretStore
                 Persist = 2, // CRED_PERSIST_LOCAL_MACHINE (bare denne brukeren på denne maskinen)
                 UserName = Environment.UserName,
             };
-            if (!CredWrite(ref cred, 0)) throw new InvalidOperationException("Kunne ikke lagre nøkkelen i Windows Legitimasjonsbehandling.");
+            if (!CredWrite(ref cred, 0))
+                throw new InvalidOperationException($"Kunne ikke lagre i Windows Legitimasjonsbehandling (feilkode {Marshal.GetLastPInvokeError()}).");
         }
         finally
         {
@@ -47,7 +84,7 @@ public sealed class WindowsCredentialStore : ISecretStore
         }
     }
 
-    public string? Get(string name)
+    private string? Read(string name)
     {
         if (!IsAvailable) return null;
         if (!CredRead(Prefix + name, 1, 0, out var ptr)) return null;
@@ -58,11 +95,6 @@ public sealed class WindowsCredentialStore : ISecretStore
             return Marshal.PtrToStringUni(c.CredentialBlob, (int)c.CredentialBlobSize / 2);
         }
         finally { CredFree(ptr); }
-    }
-
-    public void Delete(string name)
-    {
-        if (IsAvailable) CredDelete(Prefix + name, 1, 0);
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

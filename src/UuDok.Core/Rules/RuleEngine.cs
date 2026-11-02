@@ -20,7 +20,23 @@ public sealed record OcrInfo(string ObjectRef, List<OcrLine> Lines, bool Agreeme
     {
         if (SecondPassText == null) return Agreement;
         var second = N(SecondPassText);
-        return lines.All(l => N(l).Length == 0 || second.Contains(N(l)));
+        // Små utfall godtas: «30. november 2022» mot «november 2022» (andre lesing mistet «30.») er samme linje.
+        return lines.All(l => { var n = N(l); return n.Length == 0 || ApproxSubstringDistance(n, second) <= Math.Max(1, n.Length / 5); });
+    }
+
+    /// <summary>Minste redigeringsavstand fra <paramref name="needle"/> til en hvilken som helst del av <paramref name="hay"/> (Sellers).</summary>
+    public static int ApproxSubstringDistance(string needle, string hay)
+    {
+        var prev = new int[hay.Length + 1];
+        var cur = new int[hay.Length + 1];
+        for (int i = 1; i <= needle.Length; i++)
+        {
+            cur[0] = i;
+            for (int j = 1; j <= hay.Length; j++)
+                cur[j] = Math.Min(Math.Min(prev[j] + 1, cur[j - 1] + 1), prev[j - 1] + (needle[i - 1] == hay[j - 1] ? 0 : 1));
+            (prev, cur) = (cur, prev);
+        }
+        return prev.Min();
     }
 }
 

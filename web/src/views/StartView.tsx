@@ -7,7 +7,7 @@ const ACCEPT = ".docx,.pptx,application/vnd.openxmlformats-officedocument.wordpr
 export function StartView({ session }: { session: Session }) {
   const [files, setFiles] = useState<File[]>([]);
   const [mode, setMode] = useState("PreserveAppearance");
-  const [ai, setAi] = useState(session.ai.localConfigured ? "local" : "none");
+  const [ai, setAi] = useState(session.ai.chatGptReady ? "chatgpt" : session.ai.localConfigured ? "local" : "none");
   const [aiMode, setAiMode] = useState("BestEffort");   // «godt nok» er standard
   const [allowSig, setAllowSig] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -127,10 +127,12 @@ export function StartView({ session }: { session: Session }) {
               : "Ingen lokal bildemodell funnet. Se Hjelp eller Innstillinger."}</span>
         </div>
         <div className="choice">
-          <input type="radio" id="a2" name="ai" value="cloud" checked={ai === "cloud"} disabled={!session.ai.cloudReady} onChange={(e) => setAi(e.target.value)}
+          <input type="radio" id="a2" name="ai" value="chatgpt" checked={ai === "chatgpt"} disabled={!session.ai.chatGptReady} onChange={(e) => setAi(e.target.value)}
             aria-describedby="a2h" />
-          <label htmlFor="a2"><strong>Skytjeneste</strong> ({session.ai.cloudModel})</label><br />
-            <span className="hint" id="a2h">{session.ai.cloudReady ? "Bilder og kort tekst rundt dem sendes til leverandøren. Du har godkjent dette i Innstillinger." : "Ikke godkjent. Se Innstillinger."}</span>
+          <label htmlFor="a2"><strong>ChatGPT</strong>{session.ai.chatGptAccount ? ` (${session.ai.chatGptAccount})` : ""}</label><br />
+            <span className="hint" id="a2h">{session.ai.chatGptReady
+              ? <>Bruker ChatGPT-abonnementet ditt (Plus eller Pro). Bilder og kort tekst rundt dem sendes til OpenAI. <a href="https://chatgpt.com/settings/usage" target="_blank" rel="noopener">Administrer bruk</a></>
+              : <>Ikke koblet til. <a href="#/innstillinger">Koble til ChatGPT-kontoen i Innstillinger</a>.</>}</span>
         </div>
         {ai !== "none" && (
           <div className="sub">

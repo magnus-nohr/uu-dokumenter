@@ -19,6 +19,7 @@
 | Oppdiktede opplysninger | Tall og navn som ikke finnes i kildene gir gjennomgang og brukes aldri automatisk | `Tall_og_navn…`, `KI_forslag_brukes_bare…` |
 | Utilsiktet nettverkstrafikk | Ingen HTTP i lokal modus; lokal modell bare på loopback; ingen automatisk skyreserve | `Ingen_nettverkstrafikk_i_lokal_modus_uten_KI`, `Lokal_modell_maa_vaere_paa_denne_maskinen` |
 | Lekkasje av nøkler | Windows Legitimasjonsbehandling; aldri i filer, logger, database eller svar | `Innstillinger_avviser…_og_nokkel_lekker_ikke` |
+| ChatGPT-innlogging | OAuth 2.0 + PKCE (S256), `state` og `nonce`, tilbakekall bare til `127.0.0.1:1455`, ID-token kontrollert (RS256 mot JWKS, `iss`, `aud`, `exp`, `nonce`), krav om `chatgpt.tokens.use.direct`; tokens bare i Legitimasjonsbehandling, roterende refresh-token, tilbakekalling ved frakobling; `store=false` på alle kall | `ChatGptTests` |
 | Dokumentbeskyttelse | Beskyttede filer endres aldri | `Dokumentbeskyttelse_omgas_aldri` |
 
 ## Personvern

@@ -13,6 +13,7 @@ public sealed record PlanInput(
 /// <summary>Tekst lest fra et bilde, delt i tittel og brødtekst.</summary>
 public sealed record SlideTextCandidate(string Title, List<string> Body, DocObject Picture, bool Agreement, bool Complex)
 {
+    public int DroppedLines { get; init; }
     public string AsValue => string.Join("\n", new[] { Title }.Concat(Body));
     public string AllText => string.Join(" ", new[] { Title }.Concat(Body));
 }
@@ -61,8 +62,12 @@ public static class Planner
             if (cand == null) { f.ResultNote = "Ingen tittel funnet i tekst eller bilder. Legg til en tittel manuelt."; continue; }
             var pic = cand.Picture;
             var uncertainty = new List<string>();
-            if (!cand.Agreement) uncertainty.Add("Teksten i bildet ble lest ulikt i to forsøk.");
+            if (!cand.Agreement) uncertainty.Add("Tittelen ble lest ulikt i to forsøk.");
             if (cand.Complex) uncertainty.Add("Bildet har mye tekst; rekkefølgen i brødteksten kan avvike fra bildet.");
+            if (cand.DroppedLines > 0) uncertainty.Add($"{cand.DroppedLines} tekstlinje(r) ble lest ulikt i to forsøk og er utelatt.");
+            // «Godt nok» (standard, også uten KI): bare usikker tittel holder tilbake. «Forsiktig» og «Gjennomgå» holder også tilbake mye tekst.
+            var careful = p.Options.AiMode is AiMode.Automatic or AiMode.Review;
+            var holdBack = !cand.Agreement || (careful && cand.Complex);
             // Bak bildet når bildet er ugjennomsiktig og ligger på øverste nivå; ellers utenfor lysbildet.
             var behind = pic.Depth == 0 && p.OpaqueImages?.Contains(pic.Ref.ToString()) == true && !pic.Extra.ContainsKey("transparency")
                          && (pic.Bounds?.RotationDeg60k ?? 0) == 0;
@@ -72,7 +77,7 @@ public static class Planner
             var c = Add(ChangeKind.AddHiddenSlideText, new ObjectRef(slide.PartUri, "part"), cand.AsValue, ChangeOrigin.Ocr, linked,
                 $"Lysbildet består av et bilde med tekst. Teksten er lest lokalt og lagt inn som ekte tittel{(cand.Body.Count > 0 ? " og brødtekst" : "")} " +
                 (behind ? "bak bildet" : "utenfor lysbildet") + ", slik at skjermlesere og leselister får den. Lysbildet ser likt ut.",
-                uncertainty.Count > 0, uncertainty: uncertainty,
+                holdBack, uncertainty: uncertainty,
                 display: new()
                 {
                     ["slide"] = slide.Number.ToString(), ["source"] = "OCR", ["image"] = ImageKey(pic), ["location"] = $"Lysbilde {slide.Number}",
@@ -323,7 +328,11 @@ public static class Planner
             var body = lines.Where(l => !titleLines.Contains(l))
                 .Where(l => l.H >= 0.2 * maxH || l.Text.Trim().Count(char.IsLetter) >= 3)
                 .Select(l => l.Text.Trim()).ToList();
-            return new SlideTextCandidate(title, body, pic, info.Confirms(titleLines.Select(l => l.Text).Concat(body)), body.Count > 12);
+            // «Godt nok»: tittelen må være lest likt i begge forsøk; brødtekstlinjer som ble lest ulikt, utelates
+            // i stedet for å stoppe hele lysbildet.
+            var confirmedBody = body.Where(l => info.Confirms([l])).ToList();
+            return new SlideTextCandidate(title, confirmedBody, pic, info.Confirms(titleLines.Select(l => l.Text)), confirmedBody.Count > 12)
+            { DroppedLines = body.Count - confirmedBody.Count };
         }
         return null;
     }

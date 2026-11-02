@@ -37,6 +37,8 @@ builder.Services.AddSingleton(new SettingsService(Path.Combine(dataDir, "setting
 builder.Services.AddSingleton<ISecretStore>(builder.Configuration.GetValue("UuDok:InMemorySecrets", false) ? new InMemorySecretStore() : new WindowsCredentialStore());
 builder.Services.AddSingleton<Func<IRenderer>>(_ => () => File.Exists(helper) ? new OfficeRenderer(helper, TimeSpan.FromMinutes(10)) : new NoRenderer());
 builder.Services.AddSingleton<Func<IOcrService>>(_ => () => File.Exists(helper) ? new WindowsOcr(helper, TimeSpan.FromMinutes(15)) : new NoOcr());
+builder.Services.AddSingleton(sp => new ChatGptAuth(sp.GetRequiredService<SettingsService>(), sp.GetRequiredService<ISecretStore>(),
+    sp.GetRequiredService<ILogger<ChatGptAuth>>(), diagnosePath: Path.Combine(dataDir, "chatgpt-diagnose.log")));
 builder.Services.AddSingleton<JobService>();
 builder.Services.AddHostedService(sp => sp.GetRequiredService<JobService>());
 builder.Services.ConfigureHttpJsonOptions(o =>

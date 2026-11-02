@@ -13,6 +13,9 @@ export const Session = z.object({
     localAutoDetected: z.boolean().optional(),
     cloudReady: z.boolean(),
     cloudModel: z.string(),
+    chatGptReady: z.boolean().optional(),
+    chatGptAccount: z.string().nullable().optional(),
+    chatGptModel: z.string().nullable().optional(),
   }),
   maxUploadMb: z.number(),
   retentionDays: z.number(),
@@ -102,7 +105,20 @@ export const Settings = z.object({
 });
 export type Settings = z.infer<typeof Settings>;
 
-export type Decision = { changeId: string; action: "accept" | "edit" | "keep" | "skip" | "undo"; value?: string };
+export const ChatGptStatus = z.object({
+  connected: z.boolean(),
+  loginInProgress: z.boolean(),
+  account: z.string().nullable().optional(),
+  model: z.string().nullable().optional(),
+  models: z.array(z.string()),
+  consent: z.boolean(),
+  consentText: z.string(),
+  error: z.string().nullable().optional(),
+  usageUrl: z.string(),
+});
+export type ChatGptStatus = z.infer<typeof ChatGptStatus>;
+
+export type Decision ={ changeId: string; action: "accept" | "edit" | "keep" | "skip" | "undo"; value?: string };
 
 let csrf = "";
 
@@ -157,6 +173,11 @@ export const api = {
     }),
   acceptAll: (id: string) =>
     call(z.object({ ok: z.boolean(), count: z.number() }), `/api/jobs/${encodeURIComponent(id)}/accept-all`, { method: "POST" }),
+  chatGpt: () => call(ChatGptStatus, "/api/chatgpt"),
+  chatGptLogin: () => call(z.object({ authorizeUrl: z.string().url() }), "/api/chatgpt/login", { method: "POST" }),
+  chatGptLogout: () => call(Ok, "/api/chatgpt/logout", { method: "POST" }),
+  chatGptSave: (b: { model?: string; consent?: boolean }) =>
+    call(Ok, "/api/chatgpt", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) }),
   settings: () => call(Settings, "/api/settings"),
   saveSettings: (s: Partial<Settings> & { cloudConsent?: boolean }) =>
     call(Settings, "/api/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(s) }),

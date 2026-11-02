@@ -371,7 +371,13 @@ public sealed class Pipeline(IRenderer renderer, IOcrService ocr, Func<IAltTextP
                 var origShapes = sa[i]!["shapes"]!.AsArray().ToList();
                 foreach (var s in origShapes)
                 {
-                    if (!after.TryGetValue((int)s!["id"]!, out var t)) { bad.Add(part); notes.Add($"Lysbilde {i + 1}: en figur mangler."); continue; }
+                    if (!after.TryGetValue((int)s!["id"]!, out var t))
+                    {
+                        // En tom plassholder («Klikk for å legge til …») viser ingenting og kan være erstattet med vilje.
+                        var emptyPlaceholder = (bool?)s["isPlaceholder"] == true && ((int?)s["textLength"] ?? 0) == 0;
+                        if (!emptyPlaceholder) { bad.Add(part); notes.Add($"Lysbilde {i + 1}: en figur mangler."); }
+                        continue;
+                    }
                     foreach (var prop in new[] { "left", "top", "width", "height", "rotation" })
                         if (Math.Abs((double)s[prop]! - (double)t![prop]!) > 0.01) { bad.Add(part); notes.Add($"Lysbilde {i + 1}: figur {s["name"]} har endret {prop}."); break; }
                     if ((string?)s["textHash"] != (string?)t!["textHash"] && strict) { bad.Add(part); notes.Add($"Lysbilde {i + 1}: tekst endret i {s["name"]}."); }

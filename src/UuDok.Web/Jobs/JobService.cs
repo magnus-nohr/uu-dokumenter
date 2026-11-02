@@ -12,7 +12,7 @@ using UuDok.Web.Security;
 namespace UuDok.Web.Jobs;
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum AiChoice { none, local, cloud }
+public enum AiChoice { none, local, cloud, chatgpt }
 
 public sealed record JobRequest(ProcessingMode Mode, AiMode AiMode, AiChoice Ai, bool AllowSignatureInvalidation);
 
@@ -32,7 +32,7 @@ public sealed class Paths(string dataDir)
 /// Avbrytelse og automatisk opprydding etter oppbevaringstiden.
 /// </summary>
 public sealed class JobService(JobStore store, Paths paths, SettingsService settings, ISecretStore secrets,
-    Func<IRenderer> rendererFactory, Func<IOcrService> ocrFactory, ILogger<JobService> log) : BackgroundService
+    Func<IRenderer> rendererFactory, Func<IOcrService> ocrFactory, ChatGptAuth chatGpt, ILogger<JobService> log) : BackgroundService
 {
     private readonly Channel<(string Id, bool Review)> _queue = Channel.CreateUnbounded<(string, bool)>();
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _running = new();
@@ -192,6 +192,21 @@ public sealed class JobService(JobStore store, Paths paths, SettingsService sett
                     if (s.CloudConsentAt == null) aiError = "Skytjenesten er ikke godkjent i innstillingene.";
                     else if (secrets.Get("anthropic") is not { Length: > 0 } key) aiError = "Ingen API-nøkkel er lagret for skytjenesten.";
                     else ai = new AnthropicProvider(key, s.CloudModel);
+                    break;
+                case AiChoice.chatgpt:
+                    if (!chatGpt.Connected) aiError = "Du er ikke koblet til ChatGPT. Koble til kontoen i Innstillinger.";
+                    else if (s.ChatGptConsentAt == null) aiError = "Bruk av ChatGPT er ikke godkjent i Innstillinger.";
+                    else
+                    {
+                        var model = s.ChatGptModel;
+                        if (string.IsNullOrEmpty(model))
+                        {
+                            try { model = (await chatGpt.ListModelsAsync(ct)).FirstOrDefault(); }
+                            catch (ChatGptAuthException ex) { aiError = ex.Message; }
+                        }
+                        if (aiError == null && string.IsNullOrEmpty(model)) aiError = "Fant ingen ChatGPT-modell for kontoen din. Velg modell i Innstillinger.";
+                        if (aiError == null) ai = new ChatGptProvider(chatGpt.GetAccessTokenAsync, model!);
+                    }
                     break;
             }
             if (aiError != null) { store.Update(id, JobStatus.Failed, "Stoppet", 0, error: aiError, errorCode: "ai_config"); return; }

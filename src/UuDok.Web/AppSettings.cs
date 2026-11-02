@@ -16,9 +16,22 @@ public sealed record AppSettings
     public string CloudModel { get; init; } = UuDok.Ai.AnthropicProvider.DefaultModel;
     /// <summary>Tidspunkt brukeren godkjente at bilder og nærliggende tekst sendes til skyleverandøren. Null = ikke godkjent.</summary>
     public DateTimeOffset? CloudConsentAt { get; init; }
+    // ChatGPT («Sign in with ChatGPT»). Tokens lagres i Windows Legitimasjonsbehandling, ikke her.
+    public string? ChatGptHostId { get; init; }          // stabil, ugjennomsiktig installasjons-ID (urn:uuid)
+    public string? ChatGptClientId { get; init; }        // utstedt ved første innlogging (oaiapp_…)
+    public string? ChatGptModel { get; init; }
+    public string? ChatGptAccount { get; init; }         // visningsnavn/e-post fra ID-tokenet
+    public DateTimeOffset? ChatGptConsentAt { get; init; }
     public int RetentionDays { get; init; } = 7;
     public bool Rendering { get; init; } = true;
     public string DefaultProfile { get; init; } = "no";
+
+    public const string ChatGptConsentText =
+        "Når du bruker ChatGPT, sendes bildet slik det vises i dokumentet og kort tekst rundt bildet (overskrift, bildetekst, " +
+        "eksisterende beskrivelse og tekst lest fra bildet) til OpenAI. Filnavn og resten av dokumentet sendes ikke, og appen ber " +
+        "OpenAI om ikke å lagre svarene (store=false). Bruken trekkes fra ditt eget ChatGPT Plus- eller Pro-abonnement. " +
+        "En privat ChatGPT-konto er ikke dekket av skolens avtaler: ikke bruk den for dokumenter med personopplysninger " +
+        "eller annet innhold som ikke kan deles med OpenAI.";
 
     public const string CloudConsentText =
         "Når du velger skytjeneste, sendes bildet slik det vises i dokumentet, eventuelt originalbildet, og kort tekst rundt bildet " +

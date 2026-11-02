@@ -156,6 +156,36 @@ public class PatchingTests
     }
 
     [Fact]
+    public void Tom_tittelplassholder_erstattes_med_tittel_fra_bildet()
+    {
+        // Brukerens tilfelle: oppsett med tom «Klikk for å legge til tittel» og et KI-bilde oppå.
+        var orig = Corpus.Package("office-presentasjon.pptx");
+        var x = SafeXml.Load(orig.GetBytes("/ppt/slides/slide3.xml"));
+        var tree = x.Descendants(Ns.P + "spTree").First();
+        tree.Element(Ns.P + "grpSpPr")!.AddAfterSelf(XElement.Parse(
+            "<p:sp xmlns:p='http://schemas.openxmlformats.org/presentationml/2006/main' xmlns:a='http://schemas.openxmlformats.org/drawingml/2006/main'>" +
+            "<p:nvSpPr><p:cNvPr id='99' name='Tittel 1'/><p:cNvSpPr><a:spLocks noGrp='1'/></p:cNvSpPr><p:nvPr><p:ph type='title'/></p:nvPr></p:nvSpPr>" +
+            "<p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang='nb-NO'/></a:p></p:txBody></p:sp>"));
+        using var ms = new MemoryStream();
+        orig.WriteTo(ms, new Dictionary<string, byte[]> { ["/ppt/slides/slide3.xml"] = SafeXml.Save(x, orig.GetBytes("/ppt/slides/slide3.xml")) });
+        var pkg = OpcPackage.Load(new MemoryStream(ms.ToArray()));
+
+        var c = C(ChangeKind.AddHiddenSlideText, "/ppt/slides/slide3.xml", "part", "Fra chatbot til KI\nkronologisk utvikling");
+        c.Params["behind"] = PicLoc(pkg, "/ppt/slides/slide3.xml", "KI-bilde");
+        var res = new Patcher().Apply(pkg, [c], new PatchEnv(12192000, 6858000, "nb-NO"));
+        Assert.Equal(ChangeStatus.Applied, c.Status);
+        var after = SafeXml.Load(OpcPackage.Load(new MemoryStream(res.Output)).GetBytes("/ppt/slides/slide3.xml"));
+        var titles = after.Descendants(Ns.P + "ph").Where(ph => (string?)ph.Attribute("type") == "title").ToList();
+        var title = Assert.Single(titles);                                         // den tomme er erstattet, ikke duplisert
+        Assert.Contains("Fra chatbot til KI", title.Ancestors(Ns.P + "sp").First().Value);
+
+        // En tittelplassholder MED tekst skal aldri erstattes.
+        var c2 = C(ChangeKind.AddHiddenSlideText, "/ppt/slides/slide2.xml", "part", "X");
+        new Patcher().Apply(Corpus.Package("office-presentasjon.pptx"), [c2], new PatchEnv(12192000, 6858000));
+        Assert.Equal(ChangeStatus.Discarded, c2.Status);
+    }
+
+    [Fact]
     public void Flytting_i_leserekkefolge_godtas_som_flytting_og_ikke_som_andre_endringer()
     {
         var pkg = Corpus.Package("office-presentasjon.pptx");

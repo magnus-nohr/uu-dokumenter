@@ -1,16 +1,15 @@
 import { useEffect, useState } from "react";
 import { api, ApiError, type Settings } from "../api";
+import { ChatGptSection } from "./ChatGptSection";
 
 export function SettingsView({ onSaved }: { onSaved: () => void }) {
   const [s, setS] = useState<Settings | null>(null);
-  const [key, setKey] = useState("");
-  const [consent, setConsent] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [models, setModels] = useState<string[]>([]);
 
   useEffect(() => {
-    api.settings().then((x) => { setS(x); setConsent(x.cloudConsent); }).catch((e) => setError(e instanceof ApiError ? e.message : "Kunne ikke hente innstillinger."));
+    api.settings().then((x) => setS(x)).catch((e) => setError(e instanceof ApiError ? e.message : "Kunne ikke hente innstillinger."));
   }, []);
 
   const run = async (f: () => Promise<unknown>, ok: string) => {
@@ -46,28 +45,7 @@ export function SettingsView({ onSaved }: { onSaved: () => void }) {
         </div>
       </form>
 
-      <form onSubmit={(e) => { e.preventDefault(); void run(() => api.saveSettings({ cloudConsent: consent }), consent ? "Skytjenesten er godkjent." : "Godkjenningen er trukket tilbake."); }}>
-        <h2>Skytjeneste (valgfritt)</h2>
-        <p>{s.consentText}</p>
-        <p>Leverandør: Anthropic. Modell: {s.cloudModel}. Bruk av lokal KI faller aldri automatisk tilbake til skytjenesten.</p>
-        <div className="choice">
-          <input type="checkbox" id="consent" checked={consent} onChange={(e) => setConsent(e.target.checked)} />
-          <label htmlFor="consent">Jeg forstår hva som sendes, og godkjenner at skytjenesten kan velges for enkeltjobber.</label>
-        </div>
-        <button type="submit">Lagre valget</button>
-      </form>
-
-      <form onSubmit={(e) => { e.preventDefault(); void run(async () => { await api.saveKey(key); setKey(""); }, "API-nøkkelen er lagret i Windows Legitimasjonsbehandling."); }}>
-        <h3>API-nøkkel</h3>
-        {!s.secureStorage && <p className="alert error">Sikker nøkkellagring er ikke tilgjengelig på denne maskinen. Skytjenesten kan ikke brukes.</p>}
-        <p>{s.cloudKeyStored ? "En nøkkel er lagret." : "Ingen nøkkel er lagret."} Nøkkelen lagres i Windows Legitimasjonsbehandling og vises aldri igjen.</p>
-        <label htmlFor="key">Ny nøkkel</label>
-        <input id="key" type="password" autoComplete="off" spellCheck={false} value={key} onChange={(e) => setKey(e.target.value)} />
-        <div className="actions">
-          <button type="submit" disabled={!s.secureStorage || key.length === 0}>Lagre nøkkel</button>
-          {s.cloudKeyStored && <button type="button" onClick={() => void run(() => api.deleteKey(), "Nøkkelen er slettet.")}>Slett nøkkel</button>}
-        </div>
-      </form>
+      <ChatGptSection secureStorage={s.secureStorage} onChanged={onSaved} />
 
       <form onSubmit={(e) => { e.preventDefault(); void run(() => api.saveSettings({ retentionDays: s.retentionDays, rendering: s.rendering, defaultProfile: s.defaultProfile }), "Innstillingene er lagret."); }}>
         <h2>Behandling og personvern</h2>

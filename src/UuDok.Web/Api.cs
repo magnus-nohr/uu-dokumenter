@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Http.Features;
+using UuDok.Ai;
 using UuDok.Core;
 using UuDok.Engine;
 using UuDok.Intake;
@@ -22,7 +23,7 @@ public static partial class Api
     {
         var api = app.MapGroup("/api");
 
-        api.MapGet("/session", async (HttpContext ctx, SettingsService settings, ISecretStore secrets, Func<IRenderer> rf, Func<IOcrService> of) =>
+        api.MapGet("/session", async (HttpContext ctx, SettingsService settings, ISecretStore secrets, Func<IRenderer> rf, Func<IOcrService> of, ChatGptAuth gpt) =>
         {
             var token = ctx.Request.Cookies[LocalSecurityMiddleware.CsrfCookie] ?? LocalSecurityMiddleware.NewToken();
             ctx.Response.Cookies.Append(LocalSecurityMiddleware.CsrfCookie, token, new CookieOptions { HttpOnly = true, SameSite = SameSiteMode.Strict, Secure = false, Path = "/" });
@@ -45,6 +46,7 @@ public static partial class Api
                 {
                     localConfigured = !string.IsNullOrWhiteSpace(s.LocalAiModel), localModel = s.LocalAiModel, localAutoDetected = s.LocalAiAutoDetected,
                     cloudReady = s.CloudConsentAt != null && secrets.Get("anthropic") is { Length: > 0 }, cloudModel = s.CloudModel,
+                    chatGptReady = gpt.Connected && s.ChatGptConsentAt != null, chatGptAccount = s.ChatGptAccount, chatGptModel = s.ChatGptModel,
                 },
                 maxUploadMb = MaxUpload / (1024 * 1024),
                 retentionDays = s.RetentionDays,
@@ -177,6 +179,47 @@ public static partial class Api
             return Results.File(f, fmt == "html" ? "text/html; charset=utf-8" : "application/json; charset=utf-8", download == true ? name : null);
         });
 
+        // ---- ChatGPT («Sign in with ChatGPT») ----
+        api.MapGet("/chatgpt", async (SettingsService svc, ChatGptAuth gpt, CancellationToken ct) =>
+        {
+            var s = svc.Get();
+            List<string> models = [];
+            string? error = gpt.LastError;
+            if (gpt.Connected)
+                try { models = await gpt.ListModelsAsync(ct); }
+                catch (ChatGptAuthException ex) { error = ex.Message; }
+            return Results.Ok(new
+            {
+                connected = gpt.Connected, loginInProgress = gpt.LoginInProgress, account = s.ChatGptAccount, model = s.ChatGptModel,
+                models, consent = s.ChatGptConsentAt != null, consentText = AppSettings.ChatGptConsentText, error,
+                usageUrl = "https://chatgpt.com/settings/usage",
+            });
+        });
+
+        api.MapPost("/chatgpt/login", (SettingsService svc, ChatGptAuth gpt) =>
+        {
+            if (svc.Get().ChatGptConsentAt == null) return Problem("Godkjenn først hva som sendes til ChatGPT.");
+            try { return Results.Ok(new { authorizeUrl = gpt.BeginLogin() }); }
+            catch (InvalidOperationException ex) { return Problem(ex.Message); }
+        });
+
+        api.MapPost("/chatgpt/logout", async (ChatGptAuth gpt, CancellationToken ct) => { gpt.CancelLogin(); await gpt.LogoutAsync(ct); return Results.Ok(new { ok = true }); });
+
+        api.MapPut("/chatgpt", async (HttpRequest req, SettingsService svc) =>
+        {
+            ChatGptBody? b;
+            try { b = await JsonSerializer.DeserializeAsync<ChatGptBody>(req.Body, JobService.Json); }
+            catch (JsonException) { return Problem("Ugyldig forespørsel."); }
+            if (b?.Model != null && !Regex.IsMatch(b.Model, "^[A-Za-z0-9._:-]{1,80}$")) return Problem("Ugyldig modellnavn.");
+            var cur = svc.Get();
+            svc.Save(cur with
+            {
+                ChatGptModel = b?.Model ?? cur.ChatGptModel,
+                ChatGptConsentAt = b?.Consent switch { true => cur.ChatGptConsentAt ?? DateTimeOffset.Now, false => null, null => cur.ChatGptConsentAt },
+            });
+            return Results.Ok(new { ok = true });
+        });
+
         // ---- Innstillinger ----
         api.MapGet("/settings", (SettingsService s, ISecretStore secrets) => Results.Ok(SettingsDto(s.Get(), secrets)));
 
@@ -251,4 +294,5 @@ public static partial class Api
     public sealed record ReviewBody(List<ReviewDecision> Decisions);
     public sealed record SettingsBody(string? LocalAiUrl, string? LocalAiModel, string? CloudModel, int? RetentionDays, bool? Rendering, bool? CloudConsent, string? DefaultProfile);
     public sealed record KeyBody(string Key);
+    public sealed record ChatGptBody(string? Model, bool? Consent);
 }

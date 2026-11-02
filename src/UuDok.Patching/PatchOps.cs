@@ -19,6 +19,8 @@ public sealed class Allowance
     public HashSet<XElement> Moved { get; } = new(ReferenceEqualityComparer.Instance);
     public HashSet<int> MovedHashes { get; } = [];
     public HashSet<string> MovedKeys { get; } = [];
+    /// <summary>Elementer som er fjernet med vilje (for eksempel en tom tittelplassholder som erstattes).</summary>
+    public HashSet<int> RemovedHashes { get; } = [];
 
     public bool Covers(XmlDiff d) => d.Kind switch
     {
@@ -27,7 +29,7 @@ public sealed class Allowance
         DiffKind.ElementAdded => AddedElements.Contains(d.Element) || Moved.Contains(d.Element),
         // Identitetsnøkkel dekker tilfellet der den flyttede figuren også fikk en annen tillatt endring
         // (hver enkelt endring er allerede kontrollert mot sin egen tillatelse da den ble utført).
-        DiffKind.ElementRemoved => MovedHashes.Contains(SemanticDiff.DeepHash(d.Element)) ||
+        DiffKind.ElementRemoved => MovedHashes.Contains(SemanticDiff.DeepHash(d.Element)) || RemovedHashes.Contains(SemanticDiff.DeepHash(d.Element)) ||
                                    (SemanticDiff.IdentityKey(d.Element) is { Length: > 0 } k && MovedKeys.Contains(k)),
         DiffKind.TextChanged => TextOf.Contains(d.Element),
         _ => false
@@ -41,6 +43,7 @@ public sealed class Allowance
         foreach (var x in o.Moved) Moved.Add(x);
         foreach (var x in o.MovedHashes) MovedHashes.Add(x);
         foreach (var x in o.MovedKeys) MovedKeys.Add(x);
+        foreach (var x in o.RemovedHashes) RemovedHashes.Add(x);
     }
 
     private sealed class RefAttrComparer : IEqualityComparer<(XElement, XName)>
@@ -278,9 +281,31 @@ public static class PatchOps
     {
         var spTree = slide.Root?.Element(Ns.P + "cSld")?.Element(Ns.P + "spTree")
             ?? throw new PreconditionFailedException("Lysbildet mangler figurtre.");
-        if (spTree.Descendants(Ns.P + "ph").Any(ph => (string?)ph.Attribute("type") is "title" or "ctrTitle"))
-            throw new PreconditionFailedException("Lysbildet har allerede en tittelplassholder.");
         if (env.SlideHeightEmu <= 0 || env.SlideWidthEmu <= 0) throw new PreconditionFailedException("Lysbildestørrelse ukjent.");
+
+        // Nye ID-er beregnes før en eventuell tom plassholder fjernes, slik at den nye aldri får samme ID som den gamle.
+        var maxId = slide.Descendants().Where(e => e.Name.LocalName == "cNvPr")
+            .Select(e => int.TryParse((string?)e.Attribute("id"), out var i) ? i : 0).DefaultIfEmpty(1).Max();
+
+        // En TOM tittelplassholder fra oppsettet («Klikk for å legge til tittel») viser ingenting i fremvisning.
+        // Den erstattes av en ny plassholder med samme type og teksten fra bildet. Har den tekst, er tittelen allerede der.
+        var al = new Allowance();
+        XElement? phTemplate = null;
+        var existing = spTree.Descendants(Ns.P + "ph").Where(ph => (string?)ph.Attribute("type") is "title" or "ctrTitle").ToList();
+        if (existing.Count > 1) throw new PreconditionFailedException("Lysbildet har flere tittelplassholdere.");
+        if (existing.Count == 1)
+        {
+            var oldSp = existing[0].Ancestors(Ns.P + "sp").FirstOrDefault() ?? throw new PreconditionFailedException("Uventet tittelplassholder.");
+            if (oldSp.Parent != spTree) throw new PreconditionFailedException("Tittelplassholderen ligger i en gruppe.");
+            if (oldSp.Descendants(Ns.A + "t").Any(t => t.Value.Trim().Length > 0))
+                throw new PreconditionFailedException("Lysbildet har allerede en tittel.");
+            var oldId = (string?)oldSp.Descendants(Ns.P + "cNvPr").First().Attribute("id");
+            if (slide.Root!.Element(Ns.P + "timing")?.Descendants().Any(e => (string?)e.Attribute("spid") == oldId) == true)
+                throw new PreconditionFailedException("Den tomme tittelplassholderen er animert.");
+            phTemplate = new XElement(existing[0]);
+            al.RemovedHashes.Add(SemanticDiff.DeepHash(oldSp));
+            oldSp.Remove();
+        }
         var lines = value.Replace("\r", "").Split('\n').Select(l => l.Trim()).ToList();
         var title = lines.FirstOrDefault() ?? "";
         var body = lines.Skip(1).Where(l => l.Length > 0).ToList();
@@ -307,8 +332,6 @@ public static class PatchOps
             bodyBox = (0, H + 91440, W, bh);                // under lysbildet
         }
 
-        var maxId = slide.Descendants().Where(e => e.Name.LocalName == "cNvPr")
-            .Select(e => int.TryParse((string?)e.Attribute("id"), out var i) ? i : 0).DefaultIfEmpty(1).Max();
         var usedIdx = spTree.Descendants(Ns.P + "ph").Select(ph => int.TryParse((string?)ph.Attribute("idx"), out var i) ? i : -1).ToHashSet();
         var bodyIdx = usedIdx.Contains(1) ? usedIdx.Max() + 1 : 1;
         var lang = env.Language ?? "nb-NO";
@@ -330,8 +353,7 @@ public static class PatchOps
 
         XElement Run(string t) => new(Ns.A + "r", new XElement(Ns.A + "rPr", new XAttribute("lang", lang), new XAttribute("dirty", "0")), new XElement(Ns.A + "t", t));
 
-        var al = new Allowance();
-        var titleSp = Shape(maxId + 1, $"Tittel {maxId + 1} (fra bildet)", new XElement(Ns.P + "ph", new XAttribute("type", "title")), titleBox,
+        var titleSp = Shape(maxId + 1, $"Tittel {maxId + 1} (fra bildet)", phTemplate ?? new XElement(Ns.P + "ph", new XAttribute("type", "title")), titleBox,
             [new XElement(Ns.A + "p", Run(title))]);
         var grpSpPr = spTree.Element(Ns.P + "grpSpPr") ?? throw new PreconditionFailedException("Figurtreet mangler grpSpPr.");
         grpSpPr.AddAfterSelf(titleSp);

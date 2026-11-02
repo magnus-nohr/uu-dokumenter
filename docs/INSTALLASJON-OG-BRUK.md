@@ -64,8 +64,11 @@ uten KI står bildet igjen som «mangler beskrivelse» i rapporten. Er lesingen 
 ### Innstillinger
 
 - **Lokal KI:** adresse (må være på denne maskinen) og modellnavn. «Test tilkoblingen» viser tilgjengelige modeller.
-- **Skytjeneste:** les hva som sendes, og kryss av for godkjenning. Lagre API-nøkkelen (den vises aldri igjen).
-  Lokal KI faller aldri automatisk tilbake til skytjenesten.
+- **ChatGPT:** les hva som sendes, kryss av, og trykk **Koble til ChatGPT-kontoen**. Du logger inn hos OpenAI i en ny
+  fane («Sign in with ChatGPT»); appen ser aldri passordet, og du trenger ingen API-nøkkel. Krever ChatGPT Plus eller
+  Pro. Bruken trekkes fra abonnementet ditt (Plus har en femtimersgrense som deles med andre apper; se «Administrer
+  bruk»). Innloggingen lagres i Windows Legitimasjonsbehandling og fornyes automatisk. «Koble fra ChatGPT» trekker
+  tilgangen tilbake. Lokal KI faller aldri automatisk tilbake til ChatGPT.
 - **Oppbevaring:** jobber slettes automatisk etter valgt antall dager (standard 7). Du kan slette jobber selv.
 - **Visuell kontroll:** av/på. **Rapportprofil:** norsk regelverk, EN 301 549 V3.2.1, V4.1.1 eller beste praksis.
 

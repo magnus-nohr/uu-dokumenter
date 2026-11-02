@@ -239,7 +239,10 @@ public class AiAndPipelineTests
         var info = new UuDok.Core.Rules.OcrInfo("x", [new("O", 0, 0, 50, 66), new("Skolen i endring", 0, 0, 900, 97), new("1. august 2026", 0, 0, 800, 87)],
             Agreement: false, "nb", 1920, 1080, SecondPassText: "Skolen i endring\n1. august 2026");
         Assert.True(info.Confirms(["Skolen i endring", "1. august 2026"]));
-        Assert.False(info.Confirms(["Skolen i endrlng"]));
+        Assert.False(info.Confirms(["Helt annen tekst her"]));
+        // Observert på brukerens lysbilde: andre lesing mistet «30.» – linjen er likevel bekreftet.
+        var dato = new UuDok.Core.Rules.OcrInfo("y", [], false, "nb", 1, 1, SecondPassText: "ChatGPT introdusert november 2022");
+        Assert.True(dato.Confirms(["30. november 2022"]));
     }
 
     [Fact]
