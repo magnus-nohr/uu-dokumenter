@@ -39,7 +39,7 @@ Du gjør dette én gang.
 1. Gå til <https://github.com/magnus-nohr/uu-dokumenter>.
 2. Trykk den grønne knappen **Code** og velg **Download ZIP**.
 3. Høyreklikk den nedlastede filen og velg **Pakk ut alle**.
-4. Legg den utpakkede mappen et sted du finner igjen, for eksempel `C:\Programmer-egne\UU-dokumenter`.
+4. Legg den utpakkede mappen et sted du finner igjen, for eksempel `C:\UU-dokumenter`.
 
 Unngå mapper som synkroniseres med OneDrive. Appen består av mange små filer, og synkronisering kan låse dem mens
 appen bygges.

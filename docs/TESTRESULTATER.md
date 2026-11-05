@@ -10,10 +10,10 @@ build 20527, Microsoft Edge (Chromium, installert), Windows-OCR `nb`.
 
 | Testsett | Antall | Bestått | Feilet | Hoppet over |
 |---|---|---|---|---|
-| Enhets-, integrasjons- og webtester (`UuDok.Tests`, uten Office) | 65 | 65 | 0 | 0 |
-| Office-tester (`UuDok.Tests`, `Category=Office`) | 6 | 6 | 0 | 0 |
+| Enhets-, integrasjons- og webtester (`UuDok.Tests`, uten Office; kjørt fra ren klone 2026-11-05) | 83 | 83 | 0 | 0 |
+| Office-tester (`UuDok.Tests`, `Category=Office`; kjørt 2026-11-02) | 6 | 6 | 0 | 0 |
 | Grensesnitt: Playwright + axe-core i Edge (`UuDok.E2E`) | 8 | 8 | 0 | 0 |
-| Frontendkontrakter (Vitest) | 3 | 3 | 0 | 0 |
+| Frontendkontrakter (Vitest; kjørt fra ren klone 2026-11-05) | 3 | 3 | 0 | 0 |
 | Tekniske bevis (`UuDok.Probes`) | 9 | 9 bekreftet | 0 | – |
 
 ## Dekning av kravene til testing
