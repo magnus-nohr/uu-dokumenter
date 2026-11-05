@@ -6,21 +6,32 @@ lager kontekstbaserte alternative tekster (valgfritt med KI), og leverer en redi
 
 Appen lover ikke full WCAG-etterlevelse og kaller aldri et dokument «universelt utformet».
 
+**Status:** Tidlig versjon. Appen er bare testet på én Windows 11-maskin med Microsoft 365, og den manuelle testen med
+skjermleser er ikke utført ennå. Les gjennom resultatet før du deler filene videre.
+
+## Hva appen gjør
+
+- Legger til alternative tekster på bilder, lysbildetitler, dokumenttittel, språk og struktur.
+- Flytter tekst fra bilder inn som ekte tittel og kulepunkter bak bildet, slik at skjermlesere og leselister får den.
+- Bevarer utseendet som standard, og kontrollerer det i Word og PowerPoint når de er installert.
+- Lager en rapport over hva som er gjort, hva som er usikkert og hva du må vurdere selv.
+- Kjører lokalt på din maskin. KI er valgfritt: lokal modell (Ollama) eller din egen ChatGPT Plus/Pro-konto.
+
 ## Kom i gang (Windows)
 
-1. Installer forutsetninger (én gang): `.NET 10 SDK` og `Node.js LTS`, for eksempel med
-   `winget install Microsoft.DotNet.SDK.10` og `winget install OpenJS.NodeJS.LTS`.
-   Microsoft Word og PowerPoint anbefales for visuell kontroll.
-2. Kjør `installer.bat`.
-3. Start med `start.bat`, så åpnes appen på <http://127.0.0.1:5317/>. Stopp med `stopp.bat`.
+- **[Installasjonsveileder](docs/INSTALLASJON.md):** fra nedlasting til app som kjører, uten at du trenger å kunne
+  programmering.
+- **[Brukerveiledning](docs/BRUKERVEILEDNING.md):** slik forbedrer du filene dine.
 
-Mer i [docs/INSTALLASJON-OG-BRUK.md](docs/INSTALLASJON-OG-BRUK.md).
+Kortversjon for utviklere: installer `.NET 10 SDK` og `Node.js LTS`, kjør `installer.bat`, start med `start.bat`
+(<http://127.0.0.1:5317/>) og stopp med `stopp.bat`.
 
 ## Dokumentasjon
 
 | Dokument | Innhold |
 |---|---|
-| [Installasjon og bruk](docs/INSTALLASJON-OG-BRUK.md) | Norsk installasjons- og brukerveiledning |
+| [Installasjonsveileder](docs/INSTALLASJON.md) | Installere, oppdatere, avinstallere og feilsøke |
+| [Brukerveiledning](docs/BRUKERVEILEDNING.md) | Bruk av appen, ChatGPT, personvern og feilmeldinger |
 | [Arkitektur](docs/ARKITEKTUR.md) | Moduler, dataflyt og begrunnede tekniske valg |
 | [Tekniske bevis](docs/TEKNISKE-BEVIS.md) | Fase A: filbevaring, leserekkefølge, skjulte titler, overskrifter, rendering, OCR |
 | [Regelregister](docs/REGELREGISTER.md) | Regler, standardprofiler, kilder med dato |
@@ -42,4 +53,10 @@ kjor-bevis.bat
 ```
 
 Testkorpuset i `testkorpus/` er syntetisk: laget med `UuDok.Tools` (bilder og håndskrevet OOXML) og
-`UuDok.WinHelper create-corpus` (filer laget av Word/PowerPoint).
+`UuDok.WinHelper create-corpus` (filer laget av Word/PowerPoint). Mappen `testkorpus/ondsinnet/` inneholder bevisst
+skadelige testfiler, som ZIP-bomber. Antivirusprogrammer kan reagere på dem.
+
+## Lisens
+
+Copyright © 2026 Magnus Nohr. Lisensiert under [GNU General Public License v3.0](LICENSE). Programmet leveres uten
+noen garanti.

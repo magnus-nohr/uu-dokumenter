@@ -11,6 +11,24 @@ namespace UuDok.Tests;
 /// <summary>KI-kontrakt, usikkerhet, nettverk i lokal modus, idempotens og rapport. Mockede KI-svar tester integrasjon, ikke modellkvalitet.</summary>
 public class AiAndPipelineTests
 {
+    [Fact]
+    public void Brutte_linjer_i_bildet_blir_ett_kulepunkt()
+    {
+        static UuDok.Core.Rules.OcrLine L(string t, double x, double y, double h) => new(t, x, y, 400, h);
+        var lines = new[]
+        {
+            L("Resonnering og tenking", 100, 100, 40),          // overskrift (større)
+            L("KI bruker mer tid på", 100, 150, 30),
+            L("analysere komplekse", 100, 185, 30),             // rett under, liten bokstav: fortsettelse
+            L("oppgaver.", 100, 220, 30),
+            L("planlegger neste steg", 100, 255, 30),           // forrige slutter med punktum: nytt punkt
+            L("KI-agenter", 100, 400, 40),                       // stor bokstav: nytt punkt
+            L("verktøy", 900, 435, 40),                          // annen kolonne: nytt punkt
+        };
+        Assert.Equal(["Resonnering og tenking", "KI bruker mer tid på analysere komplekse oppgaver.", "planlegger neste steg", "KI-agenter", "verktøy"],
+            Planner.JoinWrappedLines(lines));
+    }
+
     private static AltTextRequest Req(string? ocr = null, string? chart = null, int w = 800, int h = 600) => new()
     {
         ObjectId = "obj-1", DisplayedImagePng = [1], DocumentKind = "presentasjon", Language = "nb-NO", OcrText = ocr, OcrAgreement = ocr != null,

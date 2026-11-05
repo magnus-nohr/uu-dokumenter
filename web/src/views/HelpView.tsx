@@ -28,7 +28,7 @@ export function HelpView() {
       <h2>Personvern</h2>
       <p>
         Filene lagres i en lokal jobbmappe og slettes automatisk etter antall dager valgt i innstillingene. Du kan også slette en jobb
-        selv. Ingen filer sendes ut med mindre du velger skytjeneste for en jobb.
+        selv. Ingen filer sendes ut med mindre du velger ChatGPT for en jobb.
       </p>
     </div>
   );

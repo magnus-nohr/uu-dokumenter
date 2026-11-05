@@ -186,6 +186,43 @@ public class PatchingTests
     }
 
     [Fact]
+    public void Brodtekst_fyller_tom_innholdsplassholder_som_kulepunkter_bak_bildet()
+    {
+        // Brukerens tilfelle: oppsettet «Tittel og innhold» har en tom «Klikk for å legge til tekst». Teksten fra bildet skal
+        // inn i DEN (oppsettets kulepunktliste), ikke i en ny tekstboks ved siden av. En tom plassholder med tekst røres ikke.
+        const string P = "xmlns:p='http://schemas.openxmlformats.org/presentationml/2006/main' xmlns:a='http://schemas.openxmlformats.org/drawingml/2006/main'";
+        var orig = Corpus.Package("office-presentasjon.pptx");
+        var x = SafeXml.Load(orig.GetBytes("/ppt/slides/slide3.xml"));
+        x.Descendants(Ns.P + "spTree").First().Element(Ns.P + "grpSpPr")!.AddAfterSelf(
+            XElement.Parse($"<p:sp {P}><p:nvSpPr><p:cNvPr id='98' name='Tittel 1'/><p:cNvSpPr><a:spLocks noGrp='1'/></p:cNvSpPr><p:nvPr><p:ph type='title'/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang='nb-NO'/></a:p></p:txBody></p:sp>"),
+            XElement.Parse($"<p:sp {P}><p:nvSpPr><p:cNvPr id='99' name='Plassholder for innhold 2'/><p:cNvSpPr><a:spLocks noGrp='1'/></p:cNvSpPr><p:nvPr><p:ph idx='1'/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang='nb-NO'/></a:p></p:txBody></p:sp>"));
+        using var ms = new MemoryStream();
+        orig.WriteTo(ms, new Dictionary<string, byte[]> { ["/ppt/slides/slide3.xml"] = SafeXml.Save(x, orig.GetBytes("/ppt/slides/slide3.xml")) });
+        var input = ms.ToArray();
+        var pkg = OpcPackage.Load(new MemoryStream(input));
+
+        var c = C(ChangeKind.AddHiddenSlideText, "/ppt/slides/slide3.xml", "part", "Resonnering, agenter\nResonnering og tenking\nKI bruker mer tid på å analysere komplekse oppgaver.");
+        c.Params["behind"] = PicLoc(pkg, "/ppt/slides/slide3.xml", "KI-bilde");
+        var res = new Patcher().Apply(pkg, [c], new PatchEnv(12192000, 6858000, "nb-NO"));
+        Assert.Equal(ChangeStatus.Applied, c.Status);
+        Assert.Empty(OoxmlValidation.NewIssues(OoxmlValidation.Validate(input, DocumentKind.Pptx), OoxmlValidation.Validate(res.Output, DocumentKind.Pptx)));
+
+        var tree = SafeXml.Load(OpcPackage.Load(new MemoryStream(res.Output)).GetBytes("/ppt/slides/slide3.xml")).Descendants(Ns.P + "spTree").First();
+        var phs = tree.Descendants(Ns.P + "ph").ToList();
+        var bodyPh = Assert.Single(phs, ph => (string?)ph.Attribute("idx") == "1");       // den tomme er fylt, ikke duplisert
+        Assert.DoesNotContain(phs, ph => (string?)ph.Attribute("type") == "body");      // ingen ekstra tekstboks ved siden av
+        var bodySp = bodyPh.Ancestors(Ns.P + "sp").First();
+        Assert.Equal(["Resonnering og tenking", "KI bruker mer tid på å analysere komplekse oppgaver."],
+            bodySp.Descendants(Ns.A + "p").Select(p => string.Concat(p.Descendants(Ns.A + "t").Select(t => t.Value))));
+        Assert.Empty(bodySp.Descendants(Ns.A + "buNone"));                               // kulepunkter arves fra oppsettet
+        // Leserekkefølge: tittel, brødtekst, deretter bildet. Plassert innenfor bildet (bak det).
+        var shapes = tree.Elements().Where(e => e.Name.LocalName is "sp" or "pic").ToList();
+        Assert.Equal("title", (string?)shapes[0].Descendants(Ns.P + "ph").FirstOrDefault()?.Attribute("type"));
+        Assert.Same(bodySp, shapes[1]);
+        Assert.InRange(long.Parse((string)bodySp.Descendants(Ns.A + "off").First().Attribute("y")!), 0, 6858000);
+    }
+
+    [Fact]
     public void Flytting_i_leserekkefolge_godtas_som_flytting_og_ikke_som_andre_endringer()
     {
         var pkg = Corpus.Package("office-presentasjon.pptx");

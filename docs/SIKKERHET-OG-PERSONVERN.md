@@ -27,6 +27,6 @@
 - Originalfilen lagres som skrivebeskyttet kopi i en isolert jobbmappe. Den opplastede filen på din maskin røres aldri.
 - Arbeidsfiler slettes automatisk etter oppbevaringstiden (standard 7 dager, sjekkes hver time) og kan slettes når som helst.
 - Logger inneholder bare feiltyper og jobb-ID-er, aldri dokumentinnhold eller filnavn.
-- Ved skytjeneste sendes bare bildet slik det vises (eventuelt original), og kort kontekst (overskrift, bildetekst,
+- Ved ChatGPT sendes bare bildet slik det vises (eventuelt original), og kort kontekst (overskrift, bildetekst,
   nærliggende tekst, eksisterende beskrivelse, OCR-tekst, diagramdata, QR-innhold). Filnavn og resten av dokumentet sendes ikke.
-  Brukeren må godkjenne dette i innstillingene, og velge skytjeneste per jobb.
+  Brukeren må godkjenne dette i innstillingene, og velge ChatGPT per jobb.

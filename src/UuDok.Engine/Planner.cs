@@ -326,15 +326,41 @@ public static class Planner
             var title = string.Join(" ", titleLines.Select(l => l.Text.Trim()));
             // Små linjer (under 20 % av tittelhøyden) er som regel etiketter i illustrasjonen; de tas med bare når de er lesbare ord.
             var body = lines.Where(l => !titleLines.Contains(l))
-                .Where(l => l.H >= 0.2 * maxH || l.Text.Trim().Count(char.IsLetter) >= 3)
-                .Select(l => l.Text.Trim()).ToList();
+                .Where(l => l.H >= 0.2 * maxH || l.Text.Trim().Count(char.IsLetter) >= 3).ToList();
             // «Godt nok»: tittelen må være lest likt i begge forsøk; brødtekstlinjer som ble lest ulikt, utelates
             // i stedet for å stoppe hele lysbildet.
-            var confirmedBody = body.Where(l => info.Confirms([l])).ToList();
-            return new SlideTextCandidate(title, confirmedBody, pic, info.Confirms(titleLines.Select(l => l.Text)), confirmedBody.Count > 12)
+            var confirmedBody = body.Where(l => info.Confirms([l.Text.Trim()])).ToList();
+            var paragraphs = JoinWrappedLines(confirmedBody);
+            return new SlideTextCandidate(title, paragraphs, pic, info.Confirms(titleLines.Select(l => l.Text)), confirmedBody.Count > 12)
             { DroppedLines = body.Count - confirmedBody.Count };
         }
         return null;
+    }
+
+    /// <summary>
+    /// Slår sammen linjer som er brutt i bildet («KI bruker mer tid på» / «analysere komplekse» / «oppgaver.») til ett
+    /// avsnitt, så hvert kulepunkt blir én tanke for skjermleser og leselist. En linje regnes som fortsettelse når den
+    /// ligger rett under forrige linje, har samme størrelse, starter omtrent likt og begynner med liten bokstav.
+    /// </summary>
+    public static List<string> JoinWrappedLines(IReadOnlyList<OcrLine> lines)
+    {
+        var result = new List<string>();
+        OcrLine? prev = null;
+        foreach (var l in lines)
+        {
+            var text = l.Text.Trim();
+            if (prev != null && result.Count > 0)
+            {
+                bool below = l.Y > prev.Y && l.Y - (prev.Y + prev.H) < 0.8 * prev.H;
+                bool sameSize = Math.Abs(l.H - prev.H) <= 0.15 * prev.H;
+                bool aligned = Math.Abs(l.X - prev.X) <= 1.5 * prev.H;
+                bool continues = text.Length > 0 && char.IsLower(text[0]) && !prev.Text.TrimEnd().EndsWith('.');
+                if (below && sameSize && aligned && continues) { result[^1] += " " + text; prev = l; continue; }
+            }
+            result.Add(text);
+            prev = l;
+        }
+        return result;
     }
 
     private static (string? Title, bool Sure) TitleCandidate(DocumentModel m, Dictionary<int, (string Title, string Pic)> ocrTitles)

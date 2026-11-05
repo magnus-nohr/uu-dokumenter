@@ -290,6 +290,21 @@ public static class PatchOps
         // En TOM tittelplassholder fra oppsettet («Klikk for å legge til tittel») viser ingenting i fremvisning.
         // Den erstattes av en ny plassholder med samme type og teksten fra bildet. Har den tekst, er tittelen allerede der.
         var al = new Allowance();
+        static bool HasText(XElement sp) => sp.Descendants(Ns.A + "t").Any(t => t.Value.Trim().Length > 0);
+        bool Animated(XElement sp)
+        {
+            var id = (string?)sp.Descendants(Ns.P + "cNvPr").First().Attribute("id");
+            return slide.Root!.Element(Ns.P + "timing")?.Descendants().Any(e => (string?)e.Attribute("spid") == id) == true;
+        }
+        // Fjerner en tom plassholder og returnerer en kopi av ph-elementet, så den nye arver oppsettets formatering.
+        XElement Take(XElement ph)
+        {
+            var oldSp = ph.Ancestors(Ns.P + "sp").First();
+            al.RemovedHashes.Add(SemanticDiff.DeepHash(oldSp));
+            oldSp.Remove();
+            return new XElement(ph);
+        }
+
         XElement? phTemplate = null;
         var existing = spTree.Descendants(Ns.P + "ph").Where(ph => (string?)ph.Attribute("type") is "title" or "ctrTitle").ToList();
         if (existing.Count > 1) throw new PreconditionFailedException("Lysbildet har flere tittelplassholdere.");
@@ -297,19 +312,28 @@ public static class PatchOps
         {
             var oldSp = existing[0].Ancestors(Ns.P + "sp").FirstOrDefault() ?? throw new PreconditionFailedException("Uventet tittelplassholder.");
             if (oldSp.Parent != spTree) throw new PreconditionFailedException("Tittelplassholderen ligger i en gruppe.");
-            if (oldSp.Descendants(Ns.A + "t").Any(t => t.Value.Trim().Length > 0))
-                throw new PreconditionFailedException("Lysbildet har allerede en tittel.");
-            var oldId = (string?)oldSp.Descendants(Ns.P + "cNvPr").First().Attribute("id");
-            if (slide.Root!.Element(Ns.P + "timing")?.Descendants().Any(e => (string?)e.Attribute("spid") == oldId) == true)
-                throw new PreconditionFailedException("Den tomme tittelplassholderen er animert.");
-            phTemplate = new XElement(existing[0]);
-            al.RemovedHashes.Add(SemanticDiff.DeepHash(oldSp));
-            oldSp.Remove();
+            if (HasText(oldSp)) throw new PreconditionFailedException("Lysbildet har allerede en tittel.");
+            if (Animated(oldSp)) throw new PreconditionFailedException("Den tomme tittelplassholderen er animert.");
+            phTemplate = Take(existing[0]);
         }
         var lines = value.Replace("\r", "").Split('\n').Select(l => l.Trim()).ToList();
         var title = lines.FirstOrDefault() ?? "";
         var body = lines.Skip(1).Where(l => l.Length > 0).ToList();
         if (title.Length == 0) throw new PreconditionFailedException("Tittelen er tom.");
+
+        // En TOM innholds- eller tekstplassholder fra oppsettet («Klikk for å legge til tekst») fylles med brødteksten,
+        // slik at den blir oppsettets kulepunktliste og ikke en løs tekstboks ved siden av. Den første (laveste idx) brukes.
+        XElement? bodyTemplate = null;
+        if (body.Count > 0)
+        {
+            var emptyBody = spTree.Elements(Ns.P + "sp")
+                .Select(sp => sp.Element(Ns.P + "nvSpPr")?.Element(Ns.P + "nvPr")?.Element(Ns.P + "ph"))
+                .Where(ph => ph != null && (string?)ph.Attribute("type") is null or "body" or "obj" or "subTitle")
+                .Where(ph => !HasText(ph!.Ancestors(Ns.P + "sp").First()) && !Animated(ph.Ancestors(Ns.P + "sp").First()))
+                .OrderBy(ph => int.TryParse((string?)ph!.Attribute("idx"), out var i) ? i : 0)
+                .FirstOrDefault();
+            if (emptyBody != null) bodyTemplate = Take(emptyBody);
+        }
 
         long W = env.SlideWidthEmu, H = env.SlideHeightEmu;
         (long x, long y, long cx, long cy) titleBox, bodyBox;
@@ -360,10 +384,10 @@ public static class PatchOps
         al.AddedElements.Add(titleSp);
         if (body.Count > 0)
         {
+            // Ingen egen avsnittsformatering: punktene arver kulepunkter fra oppsettet/malen, så skjermlesere får en liste.
             var bodySp = Shape(maxId + 2, $"Brødtekst {maxId + 2} (fra bildet)",
-                new XElement(Ns.P + "ph", new XAttribute("type", "body"), new XAttribute("idx", bodyIdx)), bodyBox,
-                body.Select(l => new XElement(Ns.A + "p",
-                    new XElement(Ns.A + "pPr", new XAttribute("marL", 0), new XAttribute("indent", 0), new XElement(Ns.A + "buNone")), Run(l))));
+                bodyTemplate ?? new XElement(Ns.P + "ph", new XAttribute("type", "body"), new XAttribute("idx", bodyIdx)), bodyBox,
+                body.Select(l => new XElement(Ns.A + "p", Run(l))));
             titleSp.AddAfterSelf(bodySp);
             al.AddedElements.Add(bodySp);
         }
