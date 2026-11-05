@@ -12,3 +12,4 @@ playwright-report/
 test-results/
 testkorpus/stor-400.pptx
 src/UuDok.Web/wwwroot/
+/dist/

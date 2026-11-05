@@ -19,11 +19,13 @@ skjermleser er ikke utført ennå. Les gjennom resultatet før du deler filene v
 
 ## Kom i gang (Windows)
 
+- **[Last ned siste versjon](https://github.com/magnus-nohr/uu-dokumenter/releases/latest):** ferdig pakke for Windows.
+  Du trenger ikke installere noe annet.
 - **[Installasjonsveileder](docs/INSTALLASJON.md):** fra nedlasting til app som kjører, uten at du trenger å kunne
   programmering.
 - **[Brukerveiledning](docs/BRUKERVEILEDNING.md):** slik forbedrer du filene dine.
 
-Kortversjon for utviklere: installer `.NET 10 SDK` og `Node.js LTS`, kjør `installer.bat`, start med `start.bat`
+Vil du bygge selv: installer `.NET 10 SDK` og `Node.js LTS`, kjør `installer.bat`, start med `start.bat`
 (<http://127.0.0.1:5317/>) og stopp med `stopp.bat`.
 
 ## Dokumentasjon

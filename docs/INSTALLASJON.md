@@ -1,7 +1,7 @@
 # Installasjonsveileder
 
 Denne veiledningen tar deg fra GitHub til en app som kjører på din egen Windows-maskin. Du trenger ikke kunne
-programmering. Regn med 15–20 minutter første gang, mest til nedlastinger.
+programmering, og du trenger ikke installere noe annet. Regn med fem minutter.
 
 Når appen er installert, går du videre til [brukerveiledningen](BRUKERVEILEDNING.md).
 
@@ -9,55 +9,31 @@ Når appen er installert, går du videre til [brukerveiledningen](BRUKERVEILEDNI
 
 | | Hva | Merknad |
 |---|---|---|
-| **Må ha** | Windows 10 eller 11 (64-bit) | Appen er bare testet på Windows 11. |
-| **Må ha** | .NET 10 SDK og Node.js LTS | Brukes til å bygge appen på maskinen din. Se steg 1. |
+| **Må ha** | Windows 10 eller 11 (64-bit) | Appen er bare testet på Windows 11. Maskiner med ARM-prosessor støttes ikke av pakken. |
 | Anbefalt | Microsoft 365 Word og PowerPoint | Da kontrollerer appen at utseendet er uendret. Uten Office virker appen, men rapporten sier at utseendet ikke er kontrollert. |
 | Anbefalt | Norsk tekstgjenkjenning i Windows | Trengs for å lese tekst i bilder. Se [valgfrie tillegg](#valgfrie-tillegg). |
 | Valgfritt | Lokal KI-modell eller ChatGPT Plus/Pro | Trengs bare for å lage beskrivelser av bilder. Se [valgfrie tillegg](#valgfrie-tillegg). |
 
-## Steg 1: Installer .NET og Node.js
+## Steg 1: Last ned appen
 
-Du gjør dette én gang.
+1. Gå til [siste versjon](https://github.com/magnus-nohr/uu-dokumenter/releases/latest).
+2. Under **Assets** trykker du filen som heter `UU-dokumenter-…-win-x64.zip`.
 
-1. Trykk på Windows-tasten, skriv `Terminal` og trykk Enter.
-2. Lim inn denne kommandoen og trykk Enter. Svar ja hvis Windows spør om tillatelse.
+Bruk denne filen, ikke **Source code** eller den grønne **Code**-knappen. De inneholder bare kildekoden.
 
-   ```bash
-   winget install Microsoft.DotNet.SDK.10
-   ```
+## Steg 2: Pakk ut
 
-3. Gjør det samme med denne kommandoen:
+1. Høyreklikk den nedlastede filen og velg **Pakk ut alle**.
+2. Velg `C:\` som mål. Da får du mappen `C:\UU-dokumenter`.
 
-   ```bash
-   winget install OpenJS.NodeJS.LTS
-   ```
+Ikonet på skrivebordet peker til denne mappen, så velg et fast sted. Unngå mapper som synkroniseres med OneDrive.
 
-4. Lukk Terminal-vinduet.
+## Steg 3: Lag ikon på skrivebordet
 
-## Steg 2: Last ned appen
-
-1. Gå til <https://github.com/magnus-nohr/uu-dokumenter>.
-2. Trykk den grønne knappen **Code** og velg **Download ZIP**.
-3. Høyreklikk den nedlastede filen og velg **Pakk ut alle**.
-4. Legg den utpakkede mappen et sted du finner igjen, for eksempel `C:\UU-dokumenter`.
-
-Unngå mapper som synkroniseres med OneDrive. Appen består av mange små filer, og synkronisering kan låse dem mens
-appen bygges.
-
-Bruker du Git, kan du i stedet hente prosjektet med denne kommandoen:
-
-```bash
-git clone https://github.com/magnus-nohr/uu-dokumenter.git
-```
-
-## Steg 3: Installer appen
-
-1. Åpne mappen og dobbeltklikk `installer.bat`.
+1. Åpne mappen og dobbeltklikk `lag-skrivebordsikon.bat`.
 2. Viser Windows meldingen «Windows beskyttet PCen», trykker du **Mer informasjon** og deretter **Kjør likevel**.
-   Meldingen vises fordi filen er lastet ned fra nettet og ikke er signert.
-3. Vent til vinduet viser `Ferdig`. Det kan ta noen minutter.
-
-Installasjonen lager ikonet **UU-dokumenter** på skrivebordet.
+   Meldingen vises fordi appen er lastet ned fra nettet og ikke er signert med et kommersielt sertifikat. Den kan
+   komme igjen første gang du starter appen.
 
 ## Steg 4: Start appen
 
@@ -97,10 +73,11 @@ i bilder.
 
 ## Oppdatere til en ny versjon
 
-1. Last ned den nye versjonen som i steg 2, og pakk den ut over den gamle mappen (eller kjør `git pull`).
-2. Dobbeltklikk `installer.bat`. Den stopper appen selv hvis den kjører.
+1. Dobbeltklikk `stopp.bat`.
+2. Last ned den nye ZIP-filen som i steg 1.
+3. Slett den gamle mappen, og pakk ut den nye på samme sted.
 
-Jobber, innstillinger og ChatGPT-tilkoblingen beholdes.
+Jobber, innstillinger, ChatGPT-tilkoblingen og ikonet på skrivebordet beholdes.
 
 ## Avinstallere
 
@@ -114,14 +91,31 @@ Jobber, innstillinger og ChatGPT-tilkoblingen beholdes.
 
 | Det du ser | Hva du kan gjøre |
 |---|---|
-| `.NET 10 SDK mangler` eller `Node.js mangler` | Gjør steg 1 på nytt, lukk vinduet og kjør `installer.bat` igjen. |
-| `winget` blir ikke gjenkjent | Installer **App Installer** fra Microsoft Store, eller last ned [.NET 10 SDK](https://dotnet.microsoft.com/download) og [Node.js LTS](https://nodejs.org) fra nettsidene. |
-| `Installasjonen feilet` | Les meldingene over i vinduet. Sjekk at maskinen er på nett, og flytt mappen ut av OneDrive hvis den ligger der. |
-| `Mappen publish kunne ikke tømmes` | Lukk appen og vinduer som viser mappen, og kjør `installer.bat` igjen. |
-| `Appen er ikke installert ennå` | Kjør `installer.bat` først. |
+| `Fant ikke appen` | Pakk ut hele ZIP-filen først. Filene virker ikke hvis du åpner dem rett fra ZIP-filen. |
+| Windows eller antivirus stopper appen | Trykk **Mer informasjon** og **Kjør likevel**. Er Smart App Control slått på, eller stopper skolens IT-regler appen, må du be IT-avdelingen om hjelp. |
 | Siden åpner seg ikke | Kjør `stopp.bat`, og start appen på nytt. Port 5317 kan også være i bruk av et annet program. |
-| `Grensesnittet mangler` | Kjør `stopp.bat`, så `installer.bat`, og start på nytt. |
+| Ikonet virker ikke lenger | Mappen er flyttet. Kjør `lag-skrivebordsikon.bat` på nytt. |
 | Port 1455 er opptatt ved ChatGPT-innlogging | Lukk andre programmer som logger inn med ChatGPT, for eksempel Codex, og prøv igjen. |
 
 Finner du en feil? Meld den under [Issues](https://github.com/magnus-nohr/uu-dokumenter/issues). Ikke legg ved
 dokumenter med personopplysninger.
+
+## For utviklere: bygge fra kildekoden
+
+Du trenger .NET 10 SDK og Node.js LTS:
+
+```bash
+winget install Microsoft.DotNet.SDK.10
+```
+
+```bash
+winget install OpenJS.NodeJS.LTS
+```
+
+Hent koden, og kjør `installer.bat`. Den bygger appen til mappen `publish` og lager ikonet på skrivebordet.
+
+```bash
+git clone https://github.com/magnus-nohr/uu-dokumenter.git
+```
+
+Nedlastingspakken lages med `tools\lag-pakke.ps1`, som bygger siste commit med innebygd .NET.

@@ -1,0 +1,36 @@
+UU-dokumenter {VERSJON}
+======================
+
+Lokal Windows-app som forbedrer universell utforming av Word- og PowerPoint-filer.
+Du trenger ikke installere noe annet for å bruke appen.
+
+Slik kommer du i gang
+---------------------
+1. Dobbeltklikk "lag-skrivebordsikon.bat". Da får du ikonet UU-dokumenter på skrivebordet.
+2. Dobbeltklikk ikonet. Appen åpnes i nettleseren.
+3. Stopp appen med "stopp.bat".
+
+Viser Windows meldingen "Windows beskyttet PCen", trykker du "Mer informasjon" og deretter
+"Kjør likevel". Meldingen vises fordi appen ikke er signert med et kommersielt sertifikat.
+
+Flytt gjerne mappen til et fast sted først, for eksempel C:\UU-dokumenter. Ikonet peker til
+mappen der den lå da du laget det. Flytter du mappen senere, må du lage ikonet på nytt.
+
+Veiledninger ligger i mappen "dokumentasjon":
+  BRUKERVEILEDNING.md  Slik bruker du appen
+  INSTALLASJON.md      Tillegg, oppdatering, avinstallering og feilsøking
+
+Status
+------
+Tidlig versjon, testet på én Windows 11-maskin med Microsoft 365. Appen kan ikke garantere at
+et dokument er universelt utformet. Les gjennom resultatet før du deler filene videre.
+
+Lisens og kildekode
+-------------------
+Copyright (c) 2026 Magnus Nohr. Fri programvare under GNU General Public License v3.0,
+se LICENSE. Programmet leveres uten noen garanti.
+
+Kildekoden til denne versjonen:
+https://github.com/magnus-nohr/uu-dokumenter/tree/v{VERSJON}
+
+Tredjepartskomponenter og lisensene deres står i dokumentasjon\AVHENGIGHETER.md.
